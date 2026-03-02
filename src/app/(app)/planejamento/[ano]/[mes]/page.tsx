@@ -30,9 +30,10 @@ import { PeriodSummary } from "@/components/plan/period-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { getMonthName } from "@/lib/format"
+import { getMonthName, formatCurrency } from "@/lib/format"
 import { calcPeriodSummary } from "@/lib/calculations"
 import { getPeriodLabel } from "@/lib/periods"
+import { cn } from "@/lib/utils"
 
 interface PlanExpense {
   id: string
@@ -331,6 +332,32 @@ export default function PlanejamentoPage({
         </div>
       ) : (
         <>
+          {/* Banner de saldo inicial */}
+          {(() => {
+            const prevMonth = month === 1 ? 12 : month - 1
+            const prevYear = month === 1 ? year - 1 : year
+            const bal = plan.initialBalance
+            const isPositive = bal >= 0
+            return (
+              <div className={cn(
+                "rounded-lg border px-4 py-3 flex items-center justify-between mb-6",
+                isPositive
+                  ? "bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
+                  : "bg-red-50/80 border-red-200 dark:bg-red-950/20 dark:border-red-800"
+              )}>
+                <span className="text-sm text-muted-foreground">
+                  Saldo de {getMonthName(prevMonth)} {prevYear}
+                </span>
+                <span className={cn(
+                  "font-mono font-bold text-lg",
+                  isPositive ? "text-emerald-600" : "text-red-500"
+                )}>
+                  {formatCurrency(bal)}
+                </span>
+              </div>
+            )
+          })()}
+
           {/* Desktop: empilhado vertical */}
           <div className="hidden lg:block space-y-8">
             {periodData.map((pd, i) => (
