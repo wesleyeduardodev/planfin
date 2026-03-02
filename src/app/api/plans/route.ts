@@ -21,10 +21,25 @@ export async function GET(request: Request) {
           },
         },
         include: {
-          expenses: { include: { category: true }, orderBy: [{ period: "asc" }, { dueDate: "asc" }] },
+          expenses: { include: { category: true } },
           incomes: { orderBy: [{ period: "asc" }, { description: "asc" }] },
         },
       })
+
+      if (plan) {
+        // Ordenar: período → data → categoria → descrição
+        plan.expenses.sort((a, b) => {
+          if (a.period !== b.period) return a.period - b.period
+          const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0
+          const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0
+          if (dateA !== dateB) return dateA - dateB
+          const catA = a.category?.name ?? ""
+          const catB = b.category?.name ?? ""
+          if (catA !== catB) return catA.localeCompare(catB, "pt-BR")
+          return a.description.localeCompare(b.description, "pt-BR")
+        })
+      }
+
       return NextResponse.json(plan)
     }
 

@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, unauthorized, serverError } from "@/lib/api-utils"
+import { nowBR } from "@/lib/format"
 
 export async function GET() {
   const user = await getAuthUser()
   if (!user) return unauthorized()
 
   try {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1
+    const { year: currentYear, month: currentMonth, day: currentDay } = nowBR()
 
     // Current month plan
     const currentPlan = await prisma.monthlyPlan.findUnique({
@@ -35,15 +34,15 @@ export async function GET() {
     })
 
     // Upcoming expenses (next 7 days)
-    const in7Days = new Date()
-    in7Days.setDate(in7Days.getDate() + 7)
+    const todayUTC = Date.UTC(currentYear, currentMonth - 1, currentDay, 0, 0, 0)
+    const in7DaysUTC = todayUTC + 7 * 24 * 60 * 60 * 1000
 
     const upcomingExpenses = currentPlan
       ? currentPlan.expenses
           .filter((e) => {
             if (!e.dueDate) return false
-            const due = new Date(e.dueDate)
-            return due >= now && due <= in7Days && e.paidAmount < e.plannedAmount
+            const due = new Date(e.dueDate).getTime()
+            return due >= todayUTC && due <= in7DaysUTC && e.paidAmount < e.plannedAmount
           })
           .sort(
             (a, b) =>

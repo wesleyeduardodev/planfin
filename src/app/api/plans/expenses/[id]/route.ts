@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, unauthorized, serverError } from "@/lib/api-utils"
+import { toNoonUTC } from "@/lib/format"
 
 export async function PUT(
   request: Request,
@@ -26,7 +27,7 @@ export async function PUT(
       where: { id },
       data: {
         description: data.description,
-        dueDate: data.dueDate !== undefined ? (data.dueDate ? new Date(data.dueDate) : null) : undefined,
+        dueDate: data.dueDate !== undefined ? (data.dueDate ? toNoonUTC(data.dueDate) : null) : undefined,
         plannedAmount: data.plannedAmount,
         paidAmount: data.paidAmount,
         categoryId: data.categoryId,

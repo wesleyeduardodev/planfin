@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, unauthorized, serverError } from "@/lib/api-utils"
+import { toNoonUTC } from "@/lib/format"
 
 export async function POST(request: Request) {
   const user = await getAuthUser()
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
         planId: data.planId,
         period: data.period,
         description: data.description,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        dueDate: data.dueDate ? toNoonUTC(data.dueDate) : undefined,
         plannedAmount: data.plannedAmount,
         paidAmount: data.paidAmount ?? 0,
         categoryId: data.categoryId,

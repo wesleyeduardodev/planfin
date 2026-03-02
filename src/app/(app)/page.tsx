@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { formatCurrency, formatShortDate, getMonthName } from "@/lib/format"
+import { formatCurrency, formatShortDate, getMonthName, nowBR } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { BalanceChart } from "@/components/reports/balance-chart"
 
@@ -47,9 +47,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
+  const { year, month } = nowBR()
 
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ["dashboard"],

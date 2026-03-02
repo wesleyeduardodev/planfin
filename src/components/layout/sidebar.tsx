@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { nowBR } from "@/lib/format"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -32,6 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { year: currentYear, month: currentMonth } = nowBR()
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
@@ -82,7 +84,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 key={item.href}
                 href={
                   item.href === "/planejamento"
-                    ? `/planejamento/${new Date().getFullYear()}/${new Date().getMonth() + 1}`
+                    ? `/planejamento/${currentYear}/${currentMonth}`
                     : item.href
                 }
                 onClick={onClose}

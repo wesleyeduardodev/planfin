@@ -115,13 +115,15 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
     setEditField(field)
     if (field === "date") {
       if (expense.dueDate) {
+        // Extract yyyy-MM-dd in UTC to avoid timezone shift
         const d = new Date(expense.dueDate)
-        const dd = String(d.getDate()).padStart(2, "0")
-        const mm = String(d.getMonth() + 1).padStart(2, "0")
-        const yyyy = d.getFullYear()
-        setEditValue(`${dd}/${mm}/${yyyy}`)
+        const yyyy = d.getUTCFullYear()
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0")
+        const dd = String(d.getUTCDate()).padStart(2, "0")
+        setEditValue(`${yyyy}-${mm}-${dd}`)
       } else {
-        setEditValue("")
+        const mm = String(month).padStart(2, "0")
+        setEditValue(`${year}-${mm}-01`)
       }
     } else {
       setEditValue(
@@ -132,28 +134,14 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
     }
   }
 
-  function handleDateInput(value: string) {
-    // Auto-insert slashes: dd/mm/aaaa
-    const digits = value.replace(/\D/g, "").slice(0, 8)
-    let formatted = digits
-    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2)
-    if (digits.length > 4) formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4)
-    setEditValue(formatted)
-  }
-
   function commitEdit(id: string) {
     if (editField === "date") {
       if (!editValue) {
         updateMutation.mutate({ id, data: { dueDate: null } as unknown as Partial<PlanExpense> })
         return
       }
-      const parts = editValue.split("/")
-      if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
-        const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`
-        updateMutation.mutate({ id, data: { dueDate: isoDate } as unknown as Partial<PlanExpense> })
-      } else {
-        setEditingId(null)
-      }
+      // editValue is yyyy-MM-dd from the date input, send with noon UTC to avoid timezone issues
+      updateMutation.mutate({ id, data: { dueDate: `${editValue}T12:00:00Z` } as unknown as Partial<PlanExpense> })
       return
     }
     const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
@@ -259,14 +247,20 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                     <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                       {editingId === exp.id && editField === "date" ? (
                         <input
-                          type="text"
-                          placeholder="dd/mm/aaaa"
-                          className="w-28 text-sm border rounded px-1 py-1 bg-background"
+                          type="date"
+                          className="w-36 text-sm border rounded px-1 py-1 bg-background"
                           value={editValue}
-                          onChange={(e) => handleDateInput(e.target.value)}
+                          onChange={(e) => {
+                            setEditValue(e.target.value)
+                            // Commit immediately when a date is picked from calendar
+                            if (e.target.value) {
+                              const isoDate = `${e.target.value}T12:00:00Z`
+                              updateMutation.mutate({ id: exp.id, data: { dueDate: isoDate } as unknown as Partial<PlanExpense> })
+                              setCategoryEditId(null)
+                            }
+                          }}
                           onBlur={() => commitEdit(exp.id)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(exp.id)
                             if (e.key === "Escape") setEditingId(null)
                           }}
                           autoFocus

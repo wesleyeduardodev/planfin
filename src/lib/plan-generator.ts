@@ -75,7 +75,7 @@ export async function generateMonthlyPlan(
         period: re.period,
         description: re.description,
         dueDate: dueDay
-          ? new Date(year, month - 1, dueDay)
+          ? new Date(Date.UTC(year, month - 1, dueDay, 12, 0, 0))
           : undefined,
         plannedAmount: re.amount,
         paidAmount: 0,
@@ -128,11 +128,26 @@ export async function generateMonthlyPlan(
   }
 
   // Return the full plan with expenses and incomes
-  return prisma.monthlyPlan.findUnique({
+  const fullPlan = await prisma.monthlyPlan.findUnique({
     where: { id: plan.id },
     include: {
-      expenses: { include: { category: true }, orderBy: [{ period: "asc" }, { dueDate: "asc" }] },
+      expenses: { include: { category: true } },
       incomes: { orderBy: [{ period: "asc" }, { description: "asc" }] },
     },
   })
+
+  if (fullPlan) {
+    fullPlan.expenses.sort((a, b) => {
+      if (a.period !== b.period) return a.period - b.period
+      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0
+      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0
+      if (dateA !== dateB) return dateA - dateB
+      const catA = a.category?.name ?? ""
+      const catB = b.category?.name ?? ""
+      if (catA !== catB) return catA.localeCompare(catB, "pt-BR")
+      return a.description.localeCompare(b.description, "pt-BR")
+    })
+  }
+
+  return fullPlan
 }
