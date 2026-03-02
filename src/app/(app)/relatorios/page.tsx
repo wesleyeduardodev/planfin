@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   BarChart,
@@ -13,7 +14,10 @@ import {
   LineChart,
   Line,
 } from "recharts"
+import { FileText, FileSpreadsheet, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -56,6 +60,61 @@ export default function RelatoriosPage() {
     queryKey: ["reports"],
     queryFn: () => fetch("/api/reports").then((r) => r.json()),
   })
+
+  const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
+  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null)
+
+  const availableMonths = data?.monthlySummary.map((d) => ({
+    key: `${d.year}-${String(d.month).padStart(2, "0")}`,
+    label: `${getMonthName(d.month).slice(0, 3)}/${d.year}`,
+  })) || []
+
+  const allSelected = availableMonths.length > 0 && selectedMonths.size === availableMonths.length
+
+  function toggleMonth(key: string) {
+    setSelectedMonths((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedMonths(new Set())
+    } else {
+      setSelectedMonths(new Set(availableMonths.map((m) => m.key)))
+    }
+  }
+
+  async function handleExport(format: "pdf" | "excel") {
+    if (selectedMonths.size === 0) return
+    setExporting(format)
+    try {
+      const monthsParam = allSelected ? "all" : Array.from(selectedMonths).join(",")
+      const res = await fetch(`/api/export/${format}?months=${monthsParam}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.error || "Erro ao exportar")
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1]
+        || `planfin-relatorio.${format === "pdf" ? "pdf" : "xlsx"}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      // toast would be nice but keeping it simple
+      alert("Erro ao exportar. Tente novamente.")
+    } finally {
+      setExporting(null)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -128,6 +187,63 @@ export default function RelatoriosPage() {
         title="Relatórios"
         description="Análise financeira e comparativos"
       />
+
+      {/* Export section */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Exportar Planejamento</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Selecione os meses:</p>
+            <div className="flex flex-wrap gap-2">
+              {availableMonths.map((m) => (
+                <Badge
+                  key={m.key}
+                  variant={selectedMonths.has(m.key) ? "default" : "outline"}
+                  className="cursor-pointer select-none text-sm px-3 py-1"
+                  onClick={() => toggleMonth(m.key)}
+                >
+                  {m.label}
+                </Badge>
+              ))}
+              <Badge
+                variant={allSelected ? "default" : "outline"}
+                className="cursor-pointer select-none text-sm px-3 py-1"
+                onClick={toggleAll}
+              >
+                Todos
+              </Badge>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              disabled={selectedMonths.size === 0 || exporting !== null}
+              onClick={() => handleExport("pdf")}
+            >
+              {exporting === "pdf" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              Baixar PDF
+            </Button>
+            <Button
+              variant="outline"
+              disabled={selectedMonths.size === 0 || exporting !== null}
+              onClick={() => handleExport("excel")}
+            >
+              {exporting === "excel" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+              )}
+              Baixar Excel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-6">
         {/* Balance evolution */}
