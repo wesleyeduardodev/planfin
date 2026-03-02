@@ -4,7 +4,7 @@ services:
     container_name: planfin-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5438:5432"
     environment:
       POSTGRES_USER: planfin
       POSTGRES_PASSWORD: planfin

@@ -30,7 +30,7 @@ docker compose down      # Para o banco
 
 ## Variaveis de Ambiente
 ```
-DATABASE_URL=postgresql://planfin:planfin@localhost:5432/planfin
+DATABASE_URL=postgresql://planfin:planfin@localhost:5438/planfin
 NEXTAUTH_SECRET=<gerar com openssl rand -base64 32>
 NEXTAUTH_URL=http://localhost:3000
 ```

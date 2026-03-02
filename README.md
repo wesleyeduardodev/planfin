@@ -30,7 +30,7 @@ openssl rand -base64 32
 Cole o valor gerado em `NEXTAUTH_SECRET`. O arquivo final deve ficar assim:
 
 ```env
-DATABASE_URL=postgresql://planfin:planfin@localhost:5432/planfin
+DATABASE_URL=postgresql://planfin:planfin@localhost:5438/planfin
 NEXTAUTH_SECRET=seu-secret-gerado-aqui
 NEXTAUTH_URL=http://localhost:3000
 ```
@@ -41,7 +41,7 @@ NEXTAUTH_URL=http://localhost:3000
 docker compose up -d
 ```
 
-Isso sobe um container PostgreSQL 17 na porta 5432. Para verificar se esta rodando:
+Isso sobe um container PostgreSQL 17 na porta 5438. Para verificar se esta rodando:
 
 ```bash
 docker compose ps
