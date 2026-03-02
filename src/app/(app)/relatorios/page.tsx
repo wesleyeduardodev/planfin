@@ -55,6 +55,14 @@ const currencyFormatter = (value: any) =>
     currency: "BRL",
   }).format(Number(value) || 0)
 
+function formatYAxis(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1)}M`
+  if (abs >= 10_000) return `R$ ${(value / 1_000).toFixed(0)}k`
+  if (abs >= 1_000) return `R$ ${(value / 1_000).toFixed(1)}k`
+  return `R$ ${value.toFixed(0)}`
+}
+
 export default function RelatoriosPage() {
   const { data, isLoading } = useQuery<ReportData>({
     queryKey: ["reports"],
@@ -256,7 +264,7 @@ export default function RelatoriosPage() {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={formatYAxis} />
                 <Tooltip formatter={currencyFormatter} />
                 <Legend />
                 <Line type="monotone" dataKey="receitas" stroke="#10b981" strokeWidth={2} name="Receitas" />
@@ -279,7 +287,7 @@ export default function RelatoriosPage() {
               <BarChart data={categoryChartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={formatYAxis} />
                 <Tooltip formatter={currencyFormatter} />
                 <Legend />
                 {data.categories.map((cat) => (
@@ -308,7 +316,7 @@ export default function RelatoriosPage() {
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={formatYAxis} />
                 <Tooltip formatter={currencyFormatter} />
                 <Legend />
                 {Array.from({ length: maxPeriods }, (_, i) => (
