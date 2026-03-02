@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, useRef, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Check, Trash2, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -38,12 +38,41 @@ interface PeriodPanelProps {
   month: number
 }
 
+interface Category {
+  id: string
+  name: string
+  color: string
+}
+
 export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"planned" | "paid" | "date">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
+  const categoryRef = useRef<HTMLDivElement>(null)
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories")
+      if (!res.ok) return []
+      return res.json()
+    },
+  })
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+        setCategoryEditId(null)
+      }
+    }
+    if (categoryEditId) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [categoryEditId])
 
   const updateMutation = useMutation({
     mutationFn: async ({
@@ -183,12 +212,41 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                     className={cn(isPaid && "bg-muted/30")}
                   >
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {exp.category && (
+                      <div className="flex items-center gap-2 relative">
+                        <button
+                          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow"
+                          style={{ backgroundColor: exp.category?.color ?? "#d1d5db" }}
+                          onClick={() => setCategoryEditId(categoryEditId === exp.id ? null : exp.id)}
+                          title="Mudar categoria"
+                        />
+                        {categoryEditId === exp.id && (
                           <div
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: exp.category.color }}
-                          />
+                            ref={categoryRef}
+                            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px]"
+                          >
+                            {categories.map((cat) => (
+                              <button
+                                key={cat.id}
+                                className={cn(
+                                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent text-left",
+                                  exp.categoryId === cat.id && "bg-accent"
+                                )}
+                                onClick={() => {
+                                  updateMutation.mutate({
+                                    id: exp.id,
+                                    data: { categoryId: cat.id },
+                                  })
+                                  setCategoryEditId(null)
+                                }}
+                              >
+                                <div
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: cat.color }}
+                                />
+                                {cat.name}
+                              </button>
+                            ))}
+                          </div>
                         )}
                         <span className={cn("text-sm", isPaid && "line-through text-muted-foreground")}>
                           {exp.description}
