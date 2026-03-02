@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts"
 import { getMonthName } from "@/lib/format"
 
@@ -16,15 +17,19 @@ interface BalanceChartProps {
     year: number
     month: number
     balance: number
+    realBalance?: number
     totalIncome: number
     totalExpenses: number
   }[]
 }
 
 export function BalanceChart({ data }: BalanceChartProps) {
+  const hasRealBalance = data.some((d) => d.realBalance !== undefined)
+
   const chartData = data.map((d) => ({
     name: `${getMonthName(d.month).slice(0, 3)}/${d.year.toString().slice(2)}`,
-    saldo: d.balance,
+    saldoProjetado: d.balance,
+    ...(hasRealBalance && { saldoReal: d.realBalance }),
     receitas: d.totalIncome,
     despesas: d.totalExpenses,
   }))
@@ -59,31 +64,45 @@ export function BalanceChart({ data }: BalanceChartProps) {
             borderRadius: "8px",
           }}
         />
+        {hasRealBalance && <Legend />}
         <Line
           type="monotone"
-          dataKey="saldo"
+          dataKey="saldoProjetado"
           stroke="#10b981"
-          strokeWidth={2}
+          strokeWidth={hasRealBalance ? 1.5 : 2}
+          strokeDasharray={hasRealBalance ? "5 5" : undefined}
           dot={{ fill: "#10b981" }}
-          name="Saldo"
+          name="Saldo Projetado"
         />
+        {hasRealBalance && (
+          <Line
+            type="monotone"
+            dataKey="saldoReal"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={{ fill: "#3b82f6" }}
+            name="Saldo Real"
+          />
+        )}
         <Line
           type="monotone"
           dataKey="receitas"
-          stroke="#3b82f6"
-          strokeWidth={1.5}
-          strokeDasharray="5 5"
+          stroke="#10b981"
+          strokeWidth={1}
+          strokeDasharray="3 3"
           dot={false}
           name="Receitas"
+          opacity={0.5}
         />
         <Line
           type="monotone"
           dataKey="despesas"
           stroke="#ef4444"
-          strokeWidth={1.5}
-          strokeDasharray="5 5"
+          strokeWidth={1}
+          strokeDasharray="3 3"
           dot={false}
           name="Despesas"
+          opacity={0.5}
         />
       </LineChart>
     </ResponsiveContainer>
