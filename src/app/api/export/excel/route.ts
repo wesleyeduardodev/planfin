@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, unauthorized, badRequest, serverError } from "@/lib/api-utils"
 import { generatePlanExcel } from "@/lib/export-excel"
-import { getMonthName } from "@/lib/format"
-
 export async function GET(request: Request) {
   const user = await getAuthUser()
   if (!user) return unauthorized()
@@ -54,9 +52,11 @@ export async function GET(request: Request) {
 
     const excelBuffer = await generatePlanExcel(plans)
 
+    const fmt = (p: { year: number; month: number }) =>
+      `${String(p.month).padStart(2, "0")}-${p.year}`
     const fileName = plans.length === 1
-      ? `planfin-${getMonthName(plans[0].month).toLowerCase()}-${plans[0].year}.xlsx`
-      : `planfin-relatorio.xlsx`
+      ? `planfin-${fmt(plans[0])}.xlsx`
+      : `planfin-${fmt(plans[0])}-a-${fmt(plans[plans.length - 1])}.xlsx`
 
     return new NextResponse(new Uint8Array(excelBuffer), {
       headers: {
