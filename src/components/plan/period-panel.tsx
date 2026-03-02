@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus } from "lucide-react"
+import { Check, Trash2, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -171,6 +171,13 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
     updateMutation.mutate({
       id: expense.id,
       data: { paidAmount: expense.plannedAmount },
+    })
+  }
+
+  function unpay(expense: PlanExpense) {
+    updateMutation.mutate({
+      id: expense.id,
+      data: { paidAmount: 0 },
     })
   }
 
@@ -371,12 +378,23 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                         </Button>
                       )}
                       {isPaid && (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
-                        >
-                          Pago
-                        </Badge>
+                        <>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
+                          >
+                            Pago
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => unpay(exp)}
+                            title="Desmarcar pago"
+                          >
+                            <X className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </>
                       )}
                       <Button
                         variant="ghost"
@@ -541,12 +559,23 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                           </Button>
                         )}
                         {isPaid && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] text-emerald-600 border-emerald-200"
-                          >
-                            Pago
-                          </Badge>
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] text-emerald-600 border-emerald-200"
+                            >
+                              Pago
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => unpay(exp)}
+                              title="Desmarcar pago"
+                            >
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"

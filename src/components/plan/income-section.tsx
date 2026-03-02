@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus } from "lucide-react"
+import { Check, Trash2, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -128,6 +128,13 @@ export function IncomeSection({
     })
   }
 
+  function unreceive(income: PlanIncome) {
+    updateMutation.mutate({
+      id: income.id,
+      data: { receivedAmount: 0 },
+    })
+  }
+
   // Shared: inline currency editor
   function renderCurrencyEditor(inc: PlanIncome, field: "expected" | "received") {
     const value = field === "expected" ? inc.expectedAmount : inc.receivedAmount
@@ -234,7 +241,12 @@ export function IncomeSection({
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
                           </Button>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50">OK</Badge>
+                          <>
+                            <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50">OK</Badge>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => unreceive(inc)} title="Desmarcar recebido">
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(inc.id)}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -344,12 +356,23 @@ export function IncomeSection({
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
                           </Button>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
-                          >
-                            OK
-                          </Badge>
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
+                            >
+                              OK
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => unreceive(inc)}
+                              title="Desmarcar recebido"
+                            >
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
