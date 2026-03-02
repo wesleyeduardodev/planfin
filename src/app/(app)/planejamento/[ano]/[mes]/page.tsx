@@ -10,9 +10,18 @@ import {
   Wand2,
   Plus,
   Trash2,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { PageHeader } from "@/components/shared/page-header"
 import { PeriodPanel } from "@/components/plan/period-panel"
 import { IncomeSection } from "@/components/plan/income-section"
@@ -73,6 +82,9 @@ export default function PlanejamentoPage({
   const [addIncomeOpen, setAddIncomeOpen] = useState(false)
   const [addIncomePeriod, setAddIncomePeriod] = useState(1)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deletePeriod, setDeletePeriod] = useState<number | null>(null)
+  const [addPeriodOpen, setAddPeriodOpen] = useState(false)
+  const [newPeriodDay, setNewPeriodDay] = useState(15)
 
   const { data: plan, isLoading } = useQuery<MonthlyPlan | null>({
     queryKey: ["plan", year, month],
@@ -125,6 +137,66 @@ export default function PlanejamentoPage({
     onError: (error: Error) => toast.error(error.message),
   })
 
+  const deletePeriodMutation = useMutation({
+    mutationFn: async (period: number) => {
+      if (!plan) return
+      const res = await fetch(`/api/plans/${plan.id}/periods/${period}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erro ao excluir período")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setDeletePeriod(null)
+      toast.success("Período excluído. Itens movidos para o período anterior.")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  const addPeriodMutation = useMutation({
+    mutationFn: async (cutDay: number) => {
+      if (!plan) return
+      const res = await fetch(`/api/plans/${plan.id}/periods`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cutDay }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erro ao adicionar período")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setAddPeriodOpen(false)
+      toast.success("Período adicionado")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  function openAddPeriod() {
+    // Sugerir dia default: ponto médio do maior intervalo
+    if (plan) {
+      const days = [...plan.cutDays, daysInMonth + 1]
+      let maxGap = 0
+      let bestDay = 15
+      for (let i = 0; i < days.length - 1; i++) {
+        const gap = days[i + 1] - days[i]
+        if (gap > maxGap) {
+          maxGap = gap
+          bestDay = days[i] + Math.floor(gap / 2)
+        }
+      }
+      setNewPeriodDay(Math.min(bestDay, daysInMonth))
+    }
+    setAddPeriodOpen(true)
+  }
+
   function navigateMonth(delta: number) {
     let newMonth = month + delta
     let newYear = year
@@ -175,14 +247,23 @@ export default function PlanejamentoPage({
         action={
           <div className="flex items-center gap-2">
             {plan && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setDeleteOpen(true)}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddPeriod}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" /> Período
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDeleteOpen(true)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
             )}
             <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -223,7 +304,19 @@ export default function PlanejamentoPage({
             {periodData.map((pd, i) => (
               <div key={pd.period} className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{pd.label}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">{pd.label}</h2>
+                    {pd.period > 1 && periodCount > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDeletePeriod(pd.period)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
@@ -276,7 +369,19 @@ export default function PlanejamentoPage({
 
               {periodData.map((pd, i) => (
                 <TabsContent key={pd.period} value={`p${pd.period}`} className="space-y-4 mt-4">
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {pd.period > 1 && periodCount > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeletePeriod(pd.period)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -343,6 +448,57 @@ export default function PlanejamentoPage({
             onConfirm={() => deleteMutation.mutate()}
             loading={deleteMutation.isPending}
           />
+
+          <ConfirmDialog
+            open={deletePeriod !== null}
+            onOpenChange={() => setDeletePeriod(null)}
+            title={`Excluir Período ${deletePeriod}`}
+            description={`As despesas e receitas do Período ${deletePeriod} serão movidas para o Período ${(deletePeriod ?? 2) - 1}.`}
+            onConfirm={() => deletePeriod && deletePeriodMutation.mutate(deletePeriod)}
+            loading={deletePeriodMutation.isPending}
+          />
+
+          <Dialog open={addPeriodOpen} onOpenChange={setAddPeriodOpen}>
+            <DialogContent className="max-w-xs">
+              <DialogHeader>
+                <DialogTitle>Adicionar Período</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  addPeriodMutation.mutate(newPeriodDay)
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label>Dia de início do novo período</Label>
+                  <Input
+                    type="number"
+                    min={2}
+                    max={daysInMonth}
+                    value={newPeriodDay}
+                    onChange={(e) => setNewPeriodDay(parseInt(e.target.value) || 2)}
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O novo período será criado vazio. Mês tem {daysInMonth} dias.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setAddPeriodOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={addPeriodMutation.isPending}>
+                    {addPeriodMutation.isPending ? "Criando..." : "Criar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </>
