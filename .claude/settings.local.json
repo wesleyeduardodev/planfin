@@ -14,7 +14,8 @@
       "Bash(cat:*)",
       "Bash(npm run:*)",
       "Bash(ls:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "WebSearch"
     ]
   }
 }
