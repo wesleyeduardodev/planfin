@@ -229,13 +229,16 @@ export default function PlanejamentoPage({
     }
   })
 
-  // Saldos em cadeia
+  // Saldos em cadeia (projetado + real)
   const summaries = periodData.reduce<ReturnType<typeof calcPeriodSummary>[]>(
     (acc, pd, i) => {
       const entryBalance = i === 0
         ? (plan?.initialBalance ?? 0)
         : acc[i - 1].balance
-      acc.push(calcPeriodSummary(entryBalance, pd.expenses, pd.incomes))
+      const realEntryBalance = i === 0
+        ? (plan?.initialBalance ?? 0)
+        : acc[i - 1].realBalance
+      acc.push(calcPeriodSummary(entryBalance, pd.expenses, pd.incomes, realEntryBalance))
       return acc
     },
     []

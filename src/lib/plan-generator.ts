@@ -18,13 +18,13 @@ async function calcInitialBalance(userId: string, year: number, month: number) {
   const prevPeriodCount = prevPlan.cutDays.length
   let balance = prevPlan.initialBalance
   for (let p = 1; p <= prevPeriodCount; p++) {
-    const income = prevPlan.incomes
+    const received = prevPlan.incomes
       .filter((i) => i.period === p)
-      .reduce((s, i) => s + i.expectedAmount, 0)
-    const expenses = prevPlan.expenses
+      .reduce((s, i) => s + i.receivedAmount, 0)
+    const paid = prevPlan.expenses
       .filter((e) => e.period === p)
-      .reduce((s, e) => s + e.plannedAmount, 0)
-    balance = balance + income - expenses
+      .reduce((s, e) => s + e.paidAmount, 0)
+    balance = balance + received - paid
   }
   return balance
 }

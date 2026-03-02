@@ -39,13 +39,16 @@ export interface PeriodSummary {
   totalRemaining: number
   totalIncome: number
   totalReceived: number
-  balance: number // totalIncome + entryBalance - totalExpenses
+  balance: number        // projeção: entryBalance + totalIncome - totalExpenses
+  realEntryBalance: number
+  realBalance: number    // real: realEntryBalance + totalReceived - totalPaid
 }
 
 export function calcPeriodSummary(
   entryBalance: number,
   expenses: Expense[],
-  incomes: Income[]
+  incomes: Income[],
+  realEntryBalance?: number
 ): PeriodSummary {
   const totalExpenses = calcTotalPlanned(expenses)
   const totalPaid = calcTotalPaid(expenses)
@@ -53,6 +56,8 @@ export function calcPeriodSummary(
   const totalIncome = calcTotalExpected(incomes)
   const totalReceived = calcTotalReceived(incomes)
   const balance = entryBalance + totalIncome - totalExpenses
+  const realEntry = realEntryBalance ?? entryBalance
+  const realBalance = realEntry + totalReceived - totalPaid
 
   return {
     entryBalance,
@@ -62,5 +67,7 @@ export function calcPeriodSummary(
     totalIncome,
     totalReceived,
     balance,
+    realEntryBalance: realEntry,
+    realBalance,
   }
 }
