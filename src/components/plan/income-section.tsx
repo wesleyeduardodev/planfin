@@ -113,25 +113,120 @@ export function IncomeSection({
     })
   }
 
+  // Shared: inline currency editor
+  function renderCurrencyEditor(inc: PlanIncome, field: "expected" | "received") {
+    const value = field === "expected" ? inc.expectedAmount : inc.receivedAmount
+    const isReceived = inc.receivedAmount >= inc.expectedAmount
+
+    if (editingId === inc.id && editField === field) {
+      return (
+        <input
+          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={() => commitEdit(inc.id)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitEdit(inc.id)
+            if (e.key === "Escape") setEditingId(null)
+          }}
+          autoFocus
+        />
+      )
+    }
+    return (
+      <button
+        className={cn(
+          "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
+          field === "received" && isReceived && "text-emerald-600"
+        )}
+        onClick={() => startEdit(inc, field)}
+      >
+        {formatCurrency(value)}
+      </button>
+    )
+  }
+
   const totalExpected = incomes.reduce((s, i) => s + i.expectedAmount, 0)
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
 
+  const headerBar = (
+    <div className="px-4 py-2 border-b flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20 rounded-t-lg">
+      <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+        Receitas
+      </h4>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 text-xs"
+        onClick={onAddIncome}
+      >
+        <Plus className="mr-1 h-3 w-3" /> Entrada
+      </Button>
+    </div>
+  )
+
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="px-4 py-2 border-b flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20">
-          <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-            Receitas
-          </h4>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={onAddIncome}
-          >
-            <Plus className="mr-1 h-3 w-3" /> Entrada
-          </Button>
+      {/* ========== MOBILE: Card list ========== */}
+      <div className="sm:hidden rounded-lg border bg-card overflow-hidden">
+        {headerBar}
+        <div className="p-2 space-y-2">
+          {incomes.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              Nenhuma receita
+            </div>
+          ) : (
+            <>
+              {incomes.map((inc) => {
+                const isReceived = inc.receivedAmount >= inc.expectedAmount
+
+                return (
+                  <div key={inc.id} className={cn("rounded-lg border p-3 space-y-2", isReceived && "opacity-60")}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium truncate flex-1">{inc.description}</span>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {!isReceived ? (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => receiveFull(inc)} title="Marcar como recebido">
+                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-200">OK</Badge>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(inc.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 text-xs">
+                      <div className="text-right">
+                        <span className="text-muted-foreground text-[10px] block">Esperado</span>
+                        {renderCurrencyEditor(inc, "expected")}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-muted-foreground text-[10px] block">Recebido</span>
+                        {renderCurrencyEditor(inc, "received")}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3 flex items-center justify-between text-sm font-semibold">
+                <span>Total</span>
+                <div className="flex items-center gap-4">
+                  <span className="font-mono">{formatCurrency(totalExpected)}</span>
+                  {totalReceived > 0 && (
+                    <span className="font-mono text-emerald-600">{formatCurrency(totalReceived)}</span>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
+      </div>
+
+      {/* ========== DESKTOP: Table ========== */}
+      <div className="hidden sm:block rounded-lg border bg-card overflow-hidden">
+        {headerBar}
         <Table>
           <TableHeader>
             <TableRow>
@@ -156,51 +251,10 @@ export function IncomeSection({
                   <TableRow key={inc.id}>
                     <TableCell className="text-sm">{inc.description}</TableCell>
                     <TableCell className="text-right">
-                      {editingId === inc.id && editField === "expected" ? (
-                        <input
-                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => commitEdit(inc.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(inc.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className="font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer"
-                          onClick={() => startEdit(inc, "expected")}
-                        >
-                          {formatCurrency(inc.expectedAmount)}
-                        </button>
-                      )}
+                      {renderCurrencyEditor(inc, "expected")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {editingId === inc.id && editField === "received" ? (
-                        <input
-                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => commitEdit(inc.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(inc.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className={cn(
-                            "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-                            isReceived && "text-emerald-600"
-                          )}
-                          onClick={() => startEdit(inc, "received")}
-                        >
-                          {formatCurrency(inc.receivedAmount)}
-                        </button>
-                      )}
+                      {renderCurrencyEditor(inc, "received")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">

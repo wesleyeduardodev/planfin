@@ -115,7 +115,6 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
     setEditField(field)
     if (field === "date") {
       if (expense.dueDate) {
-        // Extract yyyy-MM-dd in UTC to avoid timezone shift
         const d = new Date(expense.dueDate)
         const yyyy = d.getUTCFullYear()
         const mm = String(d.getUTCMonth() + 1).padStart(2, "0")
@@ -140,7 +139,6 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
         updateMutation.mutate({ id, data: { dueDate: null } as unknown as Partial<PlanExpense> })
         return
       }
-      // editValue is yyyy-MM-dd from the date input, send with noon UTC to avoid timezone issues
       updateMutation.mutate({ id, data: { dueDate: `${editValue}T12:00:00Z` } as unknown as Partial<PlanExpense> })
       return
     }
@@ -167,17 +165,246 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
   const totalPaid = expenses.reduce((s, e) => s + e.paidAmount, 0)
   const totalRemaining = totalPlanned - totalPaid
 
+  // Shared: category dropdown
+  function renderCategoryDropdown(exp: PlanExpense) {
+    return (
+      <>
+        <button
+          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow"
+          style={{ backgroundColor: exp.category?.color ?? "#d1d5db" }}
+          onClick={() => setCategoryEditId(categoryEditId === exp.id ? null : exp.id)}
+          title="Mudar categoria"
+        />
+        {categoryEditId === exp.id && (
+          <div
+            ref={categoryRef}
+            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px]"
+          >
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={cn(
+                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent text-left",
+                  exp.categoryId === cat.id && "bg-accent"
+                )}
+                onClick={() => {
+                  updateMutation.mutate({
+                    id: exp.id,
+                    data: { categoryId: cat.id },
+                  })
+                  setCategoryEditId(null)
+                }}
+              >
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: cat.color }}
+                />
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // Shared: inline currency editor
+  function renderCurrencyEditor(exp: PlanExpense, field: "planned" | "paid") {
+    const value = field === "planned" ? exp.plannedAmount : exp.paidAmount
+    const remaining = exp.plannedAmount - exp.paidAmount
+    const isPaid = remaining <= 0
+
+    if (editingId === exp.id && editField === field) {
+      return (
+        <input
+          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={() => commitEdit(exp.id)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitEdit(exp.id)
+            if (e.key === "Escape") setEditingId(null)
+          }}
+          autoFocus
+        />
+      )
+    }
+    return (
+      <button
+        className={cn(
+          "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
+          field === "paid" && isPaid && "text-emerald-600"
+        )}
+        onClick={() => startEdit(exp, field)}
+      >
+        {formatCurrency(value)}
+      </button>
+    )
+  }
+
+  // Shared: date editor
+  function renderDateEditor(exp: PlanExpense) {
+    if (editingId === exp.id && editField === "date") {
+      return (
+        <input
+          type="date"
+          className="w-36 text-sm border rounded px-1 py-1 bg-background"
+          value={editValue}
+          onChange={(e) => {
+            setEditValue(e.target.value)
+            if (e.target.value) {
+              const isoDate = `${e.target.value}T12:00:00Z`
+              updateMutation.mutate({ id: exp.id, data: { dueDate: isoDate } as unknown as Partial<PlanExpense> })
+            }
+          }}
+          onBlur={() => commitEdit(exp.id)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setEditingId(null)
+          }}
+          autoFocus
+        />
+      )
+    }
+    return (
+      <button
+        className="hover:bg-muted px-1 rounded cursor-pointer text-sm text-muted-foreground"
+        onClick={() => startEdit(exp, "date")}
+      >
+        {exp.dueDate ? formatDate(exp.dueDate) : "-"}
+      </button>
+    )
+  }
+
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-hidden">
+      {/* ========== MOBILE: Card list ========== */}
+      <div className="sm:hidden space-y-2">
+        {expenses.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+            Nenhuma despesa
+          </div>
+        ) : (
+          <>
+            {expenses.map((exp) => {
+              const remaining = exp.plannedAmount - exp.paidAmount
+              const isPaid = remaining <= 0
+              const isVariable = !!exp.recurringExpenseId && exp.plannedAmount === 0
+
+              return (
+                <div
+                  key={exp.id}
+                  className={cn(
+                    "rounded-lg border bg-card p-3 space-y-2",
+                    isPaid && "opacity-60"
+                  )}
+                >
+                  {/* Row 1: category dot + description + actions */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 relative min-w-0 flex-1">
+                      {renderCategoryDropdown(exp)}
+                      <span className={cn("text-sm font-medium truncate", isPaid && "line-through text-muted-foreground")}>
+                        {exp.description}
+                      </span>
+                      {isVariable && (
+                        <CreditCard className="h-3 w-3 text-amber-500 shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {!isPaid && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => payFull(exp)}
+                          title="Marcar como pago"
+                        >
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        </Button>
+                      )}
+                      {isPaid && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-emerald-600 border-emerald-200"
+                        >
+                          Pago
+                        </Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setDeleteId(exp.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Row 2: date + values */}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="text-muted-foreground">
+                      {renderDateEditor(exp)}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="text-muted-foreground text-[10px] block">Valor</span>
+                        {renderCurrencyEditor(exp, "planned")}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-muted-foreground text-[10px] block">Pago</span>
+                        {renderCurrencyEditor(exp, "paid")}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: remaining (if not paid) */}
+                  {!isPaid && (
+                    <div className="flex justify-end">
+                      <span className={cn(
+                        "font-mono text-xs",
+                        remaining > 0 ? "text-amber-600" : "text-emerald-600"
+                      )}>
+                        Restante: {formatCurrency(remaining)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Mobile totals */}
+            <div className="rounded-lg border bg-muted/50 p-3">
+              <div className="flex items-center justify-between text-sm font-semibold">
+                <span>Total</span>
+                <div className="flex items-center gap-4">
+                  <span className="font-mono">{formatCurrency(totalPlanned)}</span>
+                  {totalPaid > 0 && (
+                    <span className="font-mono text-emerald-600">{formatCurrency(totalPaid)}</span>
+                  )}
+                </div>
+              </div>
+              {totalRemaining > 0 && (
+                <div className="flex justify-end mt-1">
+                  <span className="font-mono text-xs text-amber-600">
+                    Restante: {formatCurrency(totalRemaining)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ========== DESKTOP: Table ========== */}
+      <div className="hidden sm:block rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Descrição</TableHead>
-              <TableHead className="w-20 hidden sm:table-cell">Data</TableHead>
+              <TableHead className="w-32">Data</TableHead>
               <TableHead className="text-right w-28">Valor</TableHead>
               <TableHead className="text-right w-28">Pago</TableHead>
-              <TableHead className="text-right w-28 hidden sm:table-cell">Restante</TableHead>
+              <TableHead className="text-right w-28">Restante</TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -201,41 +428,7 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                   >
                     <TableCell>
                       <div className="flex items-center gap-2 relative">
-                        <button
-                          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow"
-                          style={{ backgroundColor: exp.category?.color ?? "#d1d5db" }}
-                          onClick={() => setCategoryEditId(categoryEditId === exp.id ? null : exp.id)}
-                          title="Mudar categoria"
-                        />
-                        {categoryEditId === exp.id && (
-                          <div
-                            ref={categoryRef}
-                            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px]"
-                          >
-                            {categories.map((cat) => (
-                              <button
-                                key={cat.id}
-                                className={cn(
-                                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent text-left",
-                                  exp.categoryId === cat.id && "bg-accent"
-                                )}
-                                onClick={() => {
-                                  updateMutation.mutate({
-                                    id: exp.id,
-                                    data: { categoryId: cat.id },
-                                  })
-                                  setCategoryEditId(null)
-                                }}
-                              >
-                                <div
-                                  className="w-2 h-2 rounded-full shrink-0"
-                                  style={{ backgroundColor: cat.color }}
-                                />
-                                {cat.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        {renderCategoryDropdown(exp)}
                         <span className={cn("text-sm", isPaid && "line-through text-muted-foreground")}>
                           {exp.description}
                         </span>
@@ -244,84 +437,16 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                      {editingId === exp.id && editField === "date" ? (
-                        <input
-                          type="date"
-                          className="w-36 text-sm border rounded px-1 py-1 bg-background"
-                          value={editValue}
-                          onChange={(e) => {
-                            setEditValue(e.target.value)
-                            // Commit immediately when a date is picked from calendar
-                            if (e.target.value) {
-                              const isoDate = `${e.target.value}T12:00:00Z`
-                              updateMutation.mutate({ id: exp.id, data: { dueDate: isoDate } as unknown as Partial<PlanExpense> })
-                              setCategoryEditId(null)
-                            }
-                          }}
-                          onBlur={() => commitEdit(exp.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className="hover:bg-muted px-1 rounded cursor-pointer"
-                          onClick={() => startEdit(exp, "date")}
-                        >
-                          {exp.dueDate ? formatDate(exp.dueDate) : "-"}
-                        </button>
-                      )}
+                    <TableCell>
+                      {renderDateEditor(exp)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {editingId === exp.id && editField === "planned" ? (
-                        <input
-                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => commitEdit(exp.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(exp.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className="font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer"
-                          onClick={() => startEdit(exp, "planned")}
-                        >
-                          {formatCurrency(exp.plannedAmount)}
-                        </button>
-                      )}
+                      {renderCurrencyEditor(exp, "planned")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {editingId === exp.id && editField === "paid" ? (
-                        <input
-                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => commitEdit(exp.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(exp.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className={cn(
-                            "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-                            isPaid && "text-emerald-600"
-                          )}
-                          onClick={() => startEdit(exp, "paid")}
-                        >
-                          {formatCurrency(exp.paidAmount)}
-                        </button>
-                      )}
+                      {renderCurrencyEditor(exp, "paid")}
                     </TableCell>
-                    <TableCell className="text-right hidden sm:table-cell">
+                    <TableCell className="text-right">
                       <span
                         className={cn(
                           "font-mono text-sm",
@@ -371,17 +496,14 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
             {/* Totals row */}
             {expenses.length > 0 && (
               <TableRow className="bg-muted/50 font-semibold">
-                <TableCell colSpan={2} className="hidden sm:table-cell">
-                  Total
-                </TableCell>
-                <TableCell className="sm:hidden">Total</TableCell>
+                <TableCell colSpan={2}>Total</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(totalPlanned)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(totalPaid)}
                 </TableCell>
-                <TableCell className="text-right font-mono hidden sm:table-cell">
+                <TableCell className="text-right font-mono">
                   {formatCurrency(totalRemaining)}
                 </TableCell>
                 <TableCell />
