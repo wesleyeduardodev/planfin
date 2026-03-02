@@ -50,7 +50,7 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [editField, setEditField] = useState<"planned" | "paid" | "date">("planned")
+  const [editField, setEditField] = useState<"planned" | "paid" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
@@ -112,10 +112,12 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
     onError: () => toast.error("Erro ao remover"),
   })
 
-  function startEdit(expense: PlanExpense, field: "planned" | "paid" | "date") {
+  function startEdit(expense: PlanExpense, field: "planned" | "paid" | "date" | "description") {
     setEditingId(expense.id)
     setEditField(field)
-    if (field === "date") {
+    if (field === "description") {
+      setEditValue(expense.description)
+    } else if (field === "date") {
       if (expense.dueDate) {
         const d = new Date(expense.dueDate)
         const yyyy = d.getUTCFullYear()
@@ -136,6 +138,15 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
   }
 
   function commitEdit(id: string) {
+    if (editField === "description") {
+      const trimmed = editValue.trim()
+      if (!trimmed) {
+        setEditingId(null)
+        return
+      }
+      updateMutation.mutate({ id, data: { description: trimmed } })
+      return
+    }
     if (editField === "date") {
       if (!editValue) {
         updateMutation.mutate({ id, data: { dueDate: null } as unknown as Partial<PlanExpense> })
@@ -321,9 +332,26 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 relative min-w-0 flex-1">
                       {renderCategoryDropdown(exp)}
-                      <span className={cn("text-sm font-medium truncate", isPaid && "line-through text-muted-foreground")}>
-                        {exp.description}
-                      </span>
+                      {editingId === exp.id && editField === "description" ? (
+                        <input
+                          className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => commitEdit(exp.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(exp.id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className={cn("text-sm font-medium truncate text-left hover:bg-muted px-1 rounded cursor-pointer", isPaid && "line-through text-muted-foreground")}
+                          onClick={() => startEdit(exp, "description")}
+                        >
+                          {exp.description}
+                        </button>
+                      )}
                       {exp.isFixed ? (
                         <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
                       ) : (
@@ -451,9 +479,26 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                     <TableCell>
                       <div className="flex items-center gap-2 relative">
                         {renderCategoryDropdown(exp)}
-                        <span className={cn("text-sm", isPaid && "line-through text-muted-foreground")}>
-                          {exp.description}
-                        </span>
+                        {editingId === exp.id && editField === "description" ? (
+                          <input
+                            className="text-sm border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => commitEdit(exp.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitEdit(exp.id)
+                              if (e.key === "Escape") setEditingId(null)
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            className={cn("text-sm text-left hover:bg-muted px-1 rounded cursor-pointer", isPaid && "line-through text-muted-foreground")}
+                            onClick={() => startEdit(exp, "description")}
+                          >
+                            {exp.description}
+                          </button>
+                        )}
                         {exp.isFixed ? (
                           <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
                         ) : (

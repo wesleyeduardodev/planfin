@@ -46,7 +46,7 @@ export function IncomeSection({
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [editField, setEditField] = useState<"expected" | "received">("expected")
+  const [editField, setEditField] = useState<"expected" | "received" | "description">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const updateMutation = useMutation({
@@ -55,7 +55,7 @@ export function IncomeSection({
       data,
     }: {
       id: string
-      data: { expectedAmount?: number; receivedAmount?: number }
+      data: { expectedAmount?: number; receivedAmount?: number; description?: string }
     }) => {
       const res = await fetch(`/api/plans/incomes/${id}`, {
         method: "PUT",
@@ -85,17 +85,30 @@ export function IncomeSection({
     onError: () => toast.error("Erro ao remover"),
   })
 
-  function startEdit(income: PlanIncome, field: "expected" | "received") {
+  function startEdit(income: PlanIncome, field: "expected" | "received" | "description") {
     setEditingId(income.id)
     setEditField(field)
-    setEditValue(
-      field === "expected"
-        ? income.expectedAmount.toFixed(2).replace(".", ",")
-        : income.receivedAmount.toFixed(2).replace(".", ",")
-    )
+    if (field === "description") {
+      setEditValue(income.description)
+    } else {
+      setEditValue(
+        field === "expected"
+          ? income.expectedAmount.toFixed(2).replace(".", ",")
+          : income.receivedAmount.toFixed(2).replace(".", ",")
+      )
+    }
   }
 
   function commitEdit(id: string) {
+    if (editField === "description") {
+      const trimmed = editValue.trim()
+      if (!trimmed) {
+        setEditingId(null)
+        return
+      }
+      updateMutation.mutate({ id, data: { description: trimmed } })
+      return
+    }
     const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
     if (isNaN(parsed)) {
       setEditingId(null)
@@ -185,8 +198,27 @@ export function IncomeSection({
                 return (
                   <div key={inc.id} className={cn("rounded-lg border p-3 space-y-2", isReceived && "opacity-60")}>
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 truncate flex-1">
-                        <span className="text-sm font-medium truncate">{inc.description}</span>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        {editingId === inc.id && editField === "description" ? (
+                          <input
+                            className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => commitEdit(inc.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitEdit(inc.id)
+                              if (e.key === "Escape") setEditingId(null)
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            className="text-sm font-medium truncate text-left hover:bg-muted px-1 rounded cursor-pointer"
+                            onClick={() => startEdit(inc, "description")}
+                          >
+                            {inc.description}
+                          </button>
+                        )}
                         {inc.isFixed ? (
                           <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
                         ) : (
@@ -263,7 +295,26 @@ export function IncomeSection({
                   <TableRow key={inc.id}>
                     <TableCell className="text-sm">
                       <div className="flex items-center gap-1.5">
-                        {inc.description}
+                        {editingId === inc.id && editField === "description" ? (
+                          <input
+                            className="text-sm border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => commitEdit(inc.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitEdit(inc.id)
+                              if (e.key === "Escape") setEditingId(null)
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            className="text-sm text-left hover:bg-muted px-1 rounded cursor-pointer"
+                            onClick={() => startEdit(inc, "description")}
+                          >
+                            {inc.description}
+                          </button>
+                        )}
                         {inc.isFixed ? (
                           <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
                         ) : (
