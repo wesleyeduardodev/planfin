@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Save, Download, Plus, X } from "lucide-react"
+import { Save, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/shared/page-header"
 
 interface Settings {
@@ -74,23 +73,6 @@ export default function ConfiguracoesPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   })
-
-  async function exportCSV() {
-    try {
-      const res = await fetch("/api/export")
-      if (!res.ok) throw new Error()
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `planfin-export-${new Date().toISOString().split("T")[0]}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success("Dados exportados com sucesso")
-    } catch {
-      toast.error("Erro ao exportar dados")
-    }
-  }
 
   if (isLoading) {
     return (
@@ -173,24 +155,6 @@ export default function ConfiguracoesPage() {
             >
               <Save className="mr-2 h-4 w-4" />
               {saveMutation.isPending ? "Salvando..." : "Salvar"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        {/* Export */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Exportar Dados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Exporte todos os seus planos e despesas em formato CSV.
-            </p>
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
             </Button>
           </CardContent>
         </Card>
