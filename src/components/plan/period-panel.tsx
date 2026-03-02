@@ -27,7 +27,6 @@ interface PlanExpense {
   paidAmount: number
   isFixed: boolean
   categoryId: string | null
-  recurringExpenseId: string | null
   category: { id: string; name: string; color: string } | null
 }
 

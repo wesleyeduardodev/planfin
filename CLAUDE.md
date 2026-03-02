@@ -38,7 +38,7 @@ NEXTAUTH_URL=http://localhost:3000
 ## Estrutura de Pastas
 ```
 prisma/
-  schema.prisma          # Schema completo (9 models)
+  schema.prisma          # Schema completo (6 models)
   seed.ts                # Seed: usuario admin + categorias
 src/
   app/
@@ -49,17 +49,12 @@ src/
       layout.tsx         # Layout com sidebar/header
       page.tsx           # Dashboard
       planejamento/[ano]/[mes]/page.tsx  # Tela principal
-      despesas-recorrentes/page.tsx
-      receitas/page.tsx
       categorias/page.tsx
       relatorios/page.tsx
       configuracoes/page.tsx
     api/                 # REST API routes
       auth/              # NextAuth + registro
       categories/        # CRUD categorias
-      recurring-expenses/# CRUD despesas recorrentes
-      income-sources/    # CRUD fontes receita
-      receivables/       # CRUD recebiveis
       plans/             # Planos mensais + expenses/incomes/generate
       dashboard/         # Dados do dashboard
       reports/           # Dados de relatorios
@@ -90,9 +85,6 @@ src/
 - **User** — usuario (email unico, senha hash com bcryptjs)
 - **Settings** — periodCount (sem limite, default 2), periodDays Int[] (default [1,20])
 - **Category** — nome, cor hex, ordem (unique por user+nome)
-- **RecurringExpense** — template recorrente (periodo 1 a N, isVariable para cartoes)
-- **IncomeSource** — receita fixa (salarios)
-- **Receivable** — recebiveis parcelados (devedor, parcelas)
 - **MonthlyPlan** — plano mensal (unique por user+ano+mes, cutDays Int[] define periodos)
 - **PlanExpense** — despesa do plano (plannedAmount, paidAmount; restante = planned - paid)
 - **PlanIncome** — receita do plano (expectedAmount, receivedAmount)
@@ -100,7 +92,8 @@ src/
 ## Logica de Negocio
 - **N periodos por mes** (sem limite rigido): configuravel via Settings.periodCount e Settings.periodDays
 - Cada periodo vai de cutDays[i] ate cutDays[i+1]-1 (ultimo vai ate fim do mes)
-- **Gerar mes**: cria MonthlyPlan + popula PlanExpense de RecurringExpense + PlanIncome de IncomeSource/Receivable
+- **Gerar do Zero**: cria MonthlyPlan vazio (so estrutura com periodos, sem itens)
+- **Copiar Fixos/Tudo**: copia despesas e receitas do mes anterior
 - **Saldo**: encadeado — saldo de cada periodo = entrada + receitas - despesas, passa como entrada do proximo
 - **restante** = plannedAmount - paidAmount (sempre calculado, nunca armazenado)
 - **Ao reduzir periodos**: itens com period > novoPeriodCount sao reclassificados para o ultimo periodo
@@ -114,7 +107,7 @@ src/
 
 ## Fases de Implementacao
 - [x] Fase 1: Fundacao (Next.js, Prisma schema, NextAuth, login/registro, seed, layout)
-- [ ] Fase 2: Cadastros (CRUD categorias, despesas recorrentes, receitas, recebiveis)
+- [ ] Fase 2: Cadastros (CRUD categorias)
 - [ ] Fase 3: Planejamento core (gerar mes, tela 2 periodos, edicao inline, saldos)
 - [ ] Fase 4: Dashboard e Relatorios (graficos, resumos)
 - [ ] Fase 5: Deploy (Render, responsividade, testes)

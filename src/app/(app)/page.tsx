@@ -10,7 +10,6 @@ import {
   Calendar,
   ArrowRight,
   Wand2,
-  Settings,
   CheckCircle2,
   ExternalLink,
 } from "lucide-react"
@@ -115,20 +114,14 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-lg font-semibold mb-1">Bem-vindo ao PlanFin!</h2>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                Comece configurando suas despesas recorrentes e receitas, depois gere o plano do mês.
+                Comece criando o plano do mês e adicione suas despesas e receitas.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex items-center justify-center">
               <Button asChild>
                 <Link href={`/planejamento/${year}/${month}`}>
                   <Wand2 className="mr-2 h-4 w-4" />
                   Criar Plano de {getMonthName(month)}
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/despesas-recorrentes">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configurar Cadastros
                 </Link>
               </Button>
             </div>

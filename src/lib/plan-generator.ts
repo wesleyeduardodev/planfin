@@ -77,7 +77,6 @@ export async function generateMonthlyPlan(
   // Get user settings
   const settings = await prisma.settings.findUnique({ where: { userId } })
   const periodDays = settings?.periodDays ?? [1, 20]
-  const periodCount = settings?.periodCount ?? 2
 
   const initialBalance = await calcInitialBalance(userId, year, month)
 
@@ -91,83 +90,6 @@ export async function generateMonthlyPlan(
       initialBalance,
     },
   })
-
-  // Create expenses from recurring expenses
-  const recurringExpenses = await prisma.recurringExpense.findMany({
-    where: { userId, isActive: true },
-  })
-
-  const daysInMonth = new Date(year, month, 0).getDate()
-
-  for (const re of recurringExpenses) {
-    // Garantir que o período não excede o periodCount atual
-    const period = Math.min(re.period, periodCount)
-    const dueDay = re.dueDay
-      ? Math.min(re.dueDay, daysInMonth)
-      : undefined
-
-    await prisma.planExpense.create({
-      data: {
-        planId: plan.id,
-        period,
-        description: re.description,
-        dueDate: dueDay
-          ? new Date(Date.UTC(year, month - 1, dueDay, 12, 0, 0))
-          : undefined,
-        plannedAmount: re.amount,
-        paidAmount: 0,
-        isFixed: !re.isVariable,
-        categoryId: re.categoryId,
-        recurringExpenseId: re.id,
-      },
-    })
-  }
-
-  // Create incomes from income sources (salaries)
-  const incomeSources = await prisma.incomeSource.findMany({
-    where: { userId, isActive: true },
-  })
-
-  for (const is of incomeSources) {
-    const period = Math.min(is.period, periodCount)
-    await prisma.planIncome.create({
-      data: {
-        planId: plan.id,
-        period,
-        description: is.description,
-        expectedAmount: is.amount,
-        receivedAmount: 0,
-        isFixed: true,
-        incomeSourceId: is.id,
-      },
-    })
-  }
-
-  // Create incomes from active receivables with pending installments
-  const receivables = await prisma.receivable.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
-  })
-
-  for (const r of receivables) {
-    if (r.paidInstall < r.totalInstall) {
-      const currentInstall = r.paidInstall + 1
-      const period = Math.min(r.period, periodCount)
-      await prisma.planIncome.create({
-        data: {
-          planId: plan.id,
-          period,
-          description: `${r.debtor} (${currentInstall}/${r.totalInstall})`,
-          expectedAmount: r.installment,
-          receivedAmount: 0,
-          isFixed: false,
-          receivableId: r.id,
-        },
-      })
-    }
-  }
 
   return fetchFullPlan(plan.id)
 }

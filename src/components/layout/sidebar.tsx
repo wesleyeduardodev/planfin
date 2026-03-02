@@ -6,8 +6,6 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
   CalendarRange,
-  Repeat,
-  Wallet,
   Tags,
   BarChart3,
   Settings,
@@ -47,8 +45,6 @@ function PlanFinLogo({ className }: { className?: string }) {
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/planejamento", label: "Planejamento", icon: CalendarRange },
-  { href: "/despesas-recorrentes", label: "Despesas Recorrentes", icon: Repeat },
-  { href: "/receitas", label: "Receitas", icon: Wallet },
   { href: "/categorias", label: "Categorias", icon: Tags },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/configuracoes", label: "Configurações", icon: Settings },

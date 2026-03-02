@@ -15,12 +15,9 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  settings          Settings?
-  categories        Category[]
-  recurringExpenses RecurringExpense[]
-  incomeSources     IncomeSource[]
-  receivables       Receivable[]
-  monthlyPlans      MonthlyPlan[]
+  settings     Settings?
+  categories   Category[]
+  monthlyPlans MonthlyPlan[]
 
   @@map("users")
 }
@@ -43,60 +40,11 @@ model Category {
   color  String @default("#6366f1")
   order  Int    @default(0)
 
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recurringExpenses RecurringExpense[]
-  planExpenses      PlanExpense[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planExpenses PlanExpense[]
 
   @@unique([userId, name])
   @@map("categories")
-}
-
-model RecurringExpense {
-  id          String  @id @default(cuid())
-  userId      String  @map("user_id")
-  categoryId  String  @map("category_id")
-  description String
-  amount      Float
-  period      Int
-  dueDay      Int?    @map("due_day")
-  isVariable  Boolean @default(false) @map("is_variable")
-  isActive    Boolean @default(true) @map("is_active")
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category     Category      @relation(fields: [categoryId], references: [id])
-  planExpenses PlanExpense[]
-
-  @@map("recurring_expenses")
-}
-
-model IncomeSource {
-  id          String  @id @default(cuid())
-  userId      String  @map("user_id")
-  description String
-  amount      Float
-  period      Int
-  isActive    Boolean @default(true) @map("is_active")
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planIncomes PlanIncome[]
-
-  @@map("income_sources")
-}
-
-model Receivable {
-  id           String  @id @default(cuid())
-  userId       String  @map("user_id")
-  debtor       String
-  installment  Float
-  totalInstall Int     @map("total_install")
-  paidInstall  Int     @default(0) @map("paid_install")
-  period       Int
-  isActive     Boolean @default(true) @map("is_active")
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planIncomes PlanIncome[]
-
-  @@map("receivables")
 }
 
 model MonthlyPlan {
@@ -126,13 +74,11 @@ model PlanExpense {
   dueDate            DateTime? @map("due_date")
   plannedAmount      Float     @map("planned_amount")
   paidAmount         Float     @default(0) @map("paid_amount")
-  isFixed            Boolean   @default(true) @map("is_fixed")
-  categoryId         String?   @map("category_id")
-  recurringExpenseId String?   @map("recurring_expense_id")
+  isFixed    Boolean @default(true) @map("is_fixed")
+  categoryId String? @map("category_id")
 
-  plan             MonthlyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
-  category         Category?         @relation(fields: [categoryId], references: [id])
-  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id])
+  plan     MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category Category?   @relation(fields: [categoryId], references: [id])
 
   @@map("plan_expenses")
 }
@@ -145,13 +91,9 @@ model PlanIncome {
   expectedAmount Float     @map("expected_amount")
   receivedAmount Float     @default(0) @map("received_amount")
   dueDate        DateTime? @map("due_date")
-  isFixed        Boolean   @default(true) @map("is_fixed")
-  incomeSourceId String? @map("income_source_id")
-  receivableId   String? @map("receivable_id")
+  isFixed Boolean @default(true) @map("is_fixed")
 
-  plan         MonthlyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
-  incomeSource IncomeSource? @relation(fields: [incomeSourceId], references: [id])
-  receivable   Receivable?   @relation(fields: [receivableId], references: [id])
+  plan MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@map("plan_incomes")
 }

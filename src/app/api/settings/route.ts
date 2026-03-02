@@ -64,12 +64,6 @@ export async function PUT(request: Request) {
       )
     }
 
-    // Buscar periodCount anterior para reclassificar se necessário
-    const oldSettings = await prisma.settings.findUnique({
-      where: { userId: user.id },
-    })
-    const oldPeriodCount = oldSettings?.periodCount ?? 2
-
     const settings = await prisma.settings.upsert({
       where: { userId: user.id },
       update: {
@@ -82,22 +76,6 @@ export async function PUT(request: Request) {
         periodDays: sorted,
       },
     })
-
-    // Ao reduzir períodos, reclassificar itens órfãos
-    if (periodCount < oldPeriodCount) {
-      await prisma.recurringExpense.updateMany({
-        where: { userId: user.id, period: { gt: periodCount } },
-        data: { period: periodCount },
-      })
-      await prisma.incomeSource.updateMany({
-        where: { userId: user.id, period: { gt: periodCount } },
-        data: { period: periodCount },
-      })
-      await prisma.receivable.updateMany({
-        where: { userId: user.id, period: { gt: periodCount } },
-        data: { period: periodCount },
-      })
-    }
 
     return NextResponse.json(settings)
   } catch (error) {

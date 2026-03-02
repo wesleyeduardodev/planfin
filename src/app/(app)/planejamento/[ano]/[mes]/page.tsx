@@ -44,7 +44,6 @@ interface PlanExpense {
   paidAmount: number
   isFixed: boolean
   categoryId: string | null
-  recurringExpenseId: string | null
   category: { id: string; name: string; color: string } | null
 }
 
@@ -56,8 +55,6 @@ interface PlanIncome {
   receivedAmount: number
   dueDate: string | null
   isFixed: boolean
-  incomeSourceId: string | null
-  receivableId: string | null
 }
 
 interface MonthlyPlan {
@@ -303,7 +300,7 @@ export default function PlanejamentoPage({
               <Wand2 className="h-8 w-8 text-primary" />
               <span className="font-semibold text-sm">Gerar do Zero</span>
               <span className="text-xs text-muted-foreground text-center">
-                A partir dos cadastros de despesas e receitas
+                Cria plano vazio para preencher manualmente
               </span>
             </button>
             <button
