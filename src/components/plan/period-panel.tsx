@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2 } from "lucide-react"
+import { Check, Trash2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -37,6 +37,7 @@ interface PeriodPanelProps {
   period: number
   year: number
   month: number
+  onAddExpense: () => void
 }
 
 interface Category {
@@ -45,7 +46,7 @@ interface Category {
   color: string
 }
 
-export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
+export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanelProps) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
@@ -276,12 +277,30 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
     )
   }
 
+  const headerBar = (
+    <div className="px-4 py-2 border-b flex items-center justify-between bg-orange-50/50 dark:bg-orange-950/20 rounded-t-lg">
+      <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+        Despesas
+      </h4>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 text-xs"
+        onClick={onAddExpense}
+      >
+        <Plus className="mr-1 h-3 w-3" /> Despesa
+      </Button>
+    </div>
+  )
+
   return (
     <>
       {/* ========== MOBILE: Card list ========== */}
-      <div className="sm:hidden space-y-2">
+      <div className="sm:hidden rounded-lg border bg-card overflow-hidden">
+        {headerBar}
+        <div className="p-2 space-y-2">
         {expenses.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+          <div className="p-4 text-center text-muted-foreground text-sm">
             Nenhuma despesa
           </div>
         ) : (
@@ -395,10 +414,12 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
             </div>
           </>
         )}
+        </div>
       </div>
 
       {/* ========== DESKTOP: Table ========== */}
       <div className="hidden sm:block rounded-lg border bg-card overflow-hidden">
+        {headerBar}
         <Table>
           <TableHeader>
             <TableRow>

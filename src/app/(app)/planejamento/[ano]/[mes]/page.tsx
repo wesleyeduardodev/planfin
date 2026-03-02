@@ -240,9 +240,6 @@ export default function PlanejamentoPage({
     []
   )
 
-  // Grid cols dinâmico — max 3 colunas, wrap automático para 4+ períodos
-  const gridStyle = { gridTemplateColumns: `repeat(${Math.min(periodCount, 3)}, minmax(0, 1fr))` }
-
   return (
     <>
       <PageHeader
@@ -334,42 +331,23 @@ export default function PlanejamentoPage({
         </div>
       ) : (
         <>
-          {/* Desktop: N columns side by side */}
-          <div className="hidden lg:grid gap-6" style={gridStyle}>
+          {/* Desktop: empilhado vertical */}
+          <div className="hidden lg:block space-y-8">
             {periodData.map((pd, i) => (
               <div key={pd.period} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold">{pd.label}</h2>
-                    {pd.period > 1 && periodCount > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeletePeriod(pd.period)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setAddExpensePeriod(pd.period)
-                      setAddExpenseOpen(true)
-                    }}
-                  >
-                    <Plus className="mr-1 h-3 w-3" /> Despesa
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">{pd.label}</h2>
+                  {pd.period > 1 && periodCount > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeletePeriod(pd.period)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
-                <PeriodPanel
-                  planId={plan.id}
-                  expenses={pd.expenses}
-                  period={pd.period}
-                  year={year}
-                  month={month}
-                />
                 <IncomeSection
                   planId={plan.id}
                   incomes={pd.incomes}
@@ -379,6 +357,17 @@ export default function PlanejamentoPage({
                   onAddIncome={() => {
                     setAddIncomePeriod(pd.period)
                     setAddIncomeOpen(true)
+                  }}
+                />
+                <PeriodPanel
+                  planId={plan.id}
+                  expenses={pd.expenses}
+                  period={pd.period}
+                  year={year}
+                  month={month}
+                  onAddExpense={() => {
+                    setAddExpensePeriod(pd.period)
+                    setAddExpenseOpen(true)
                   }}
                 />
                 <PeriodSummary
@@ -404,37 +393,18 @@ export default function PlanejamentoPage({
 
               {periodData.map((pd, i) => (
                 <TabsContent key={pd.period} value={`p${pd.period}`} className="space-y-4 mt-4">
-                  <div className="flex items-center justify-between">
+                  {pd.period > 1 && periodCount > 1 && (
                     <div className="flex items-center gap-2">
-                      {pd.period > 1 && periodCount > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => setDeletePeriod(pd.period)}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDeletePeriod(pd.period)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setAddExpensePeriod(pd.period)
-                        setAddExpenseOpen(true)
-                      }}
-                    >
-                      <Plus className="mr-1 h-3 w-3" /> Despesa
-                    </Button>
-                  </div>
-                  <PeriodPanel
-                    planId={plan.id}
-                    expenses={pd.expenses}
-                    period={pd.period}
-                    year={year}
-                    month={month}
-                  />
+                  )}
                   <IncomeSection
                     planId={plan.id}
                     incomes={pd.incomes}
@@ -444,6 +414,17 @@ export default function PlanejamentoPage({
                     onAddIncome={() => {
                       setAddIncomePeriod(pd.period)
                       setAddIncomeOpen(true)
+                    }}
+                  />
+                  <PeriodPanel
+                    planId={plan.id}
+                    expenses={pd.expenses}
+                    period={pd.period}
+                    year={year}
+                    month={month}
+                    onAddExpense={() => {
+                      setAddExpensePeriod(pd.period)
+                      setAddExpenseOpen(true)
                     }}
                   />
                   <PeriodSummary
