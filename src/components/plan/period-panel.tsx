@@ -289,14 +289,14 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
   }
 
   const headerBar = (
-    <div className="px-4 py-2 border-b flex items-center justify-between bg-orange-50/50 dark:bg-orange-950/20 rounded-t-lg">
-      <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+    <div className="px-4 py-2.5 border-b flex items-center justify-between bg-red-50 dark:bg-red-950/30 rounded-t-lg">
+      <h4 className="text-sm font-bold tracking-wide uppercase text-red-600 dark:text-red-400">
         Despesas
       </h4>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 text-xs"
+        className="h-7 text-xs font-semibold"
         onClick={onAddExpense}
       >
         <Plus className="mr-1 h-3 w-3" /> Despesa
@@ -353,9 +353,9 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                         </button>
                       )}
                       {exp.isFixed ? (
-                        <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
+                        <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px] shrink-0">Variável</Badge>
+                        <Badge className="text-[10px] font-semibold shrink-0 bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
@@ -373,7 +373,7 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                       {isPaid && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] text-emerald-600 border-emerald-200"
+                          className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
                         >
                           Pago
                         </Badge>
@@ -500,9 +500,9 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                           </button>
                         )}
                         {exp.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
+                          <Badge variant="outline" className="text-[10px] font-semibold text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px]">Variável</Badge>
+                          <Badge className="text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -564,15 +564,15 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
             )}
             {/* Totals row */}
             {expenses.length > 0 && (
-              <TableRow className="bg-muted/50 font-semibold">
-                <TableCell colSpan={2}>Total</TableCell>
-                <TableCell className="text-right font-mono">
+              <TableRow className="bg-red-50/80 dark:bg-red-950/20 font-bold border-t-2 border-red-200 dark:border-red-900">
+                <TableCell colSpan={2} className="text-base">Total</TableCell>
+                <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPlanned)}
                 </TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPaid)}
                 </TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalRemaining)}
                 </TableCell>
                 <TableCell />

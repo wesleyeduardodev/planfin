@@ -165,14 +165,14 @@ export function IncomeSection({
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
 
   const headerBar = (
-    <div className="px-4 py-2 border-b flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20 rounded-t-lg">
-      <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+    <div className="px-4 py-2.5 border-b flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/30 rounded-t-lg">
+      <h4 className="text-sm font-bold tracking-wide uppercase text-emerald-600 dark:text-emerald-400">
         Receitas
       </h4>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 text-xs"
+        className="h-7 text-xs font-semibold"
         onClick={onAddIncome}
       >
         <Plus className="mr-1 h-3 w-3" /> Entrada
@@ -220,9 +220,9 @@ export function IncomeSection({
                           </button>
                         )}
                         {inc.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
+                          <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px] shrink-0">Variável</Badge>
+                          <Badge className="text-[10px] font-semibold shrink-0 bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
                         )}
                         {inc.dueDate && (
                           <span className="text-[10px] text-muted-foreground shrink-0">{formatShortDate(inc.dueDate)}</span>
@@ -234,7 +234,7 @@ export function IncomeSection({
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
                           </Button>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-200">OK</Badge>
+                          <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50">OK</Badge>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(inc.id)}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -316,9 +316,9 @@ export function IncomeSection({
                           </button>
                         )}
                         {inc.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
+                          <Badge variant="outline" className="text-[10px] font-semibold text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px]">Variável</Badge>
+                          <Badge className="text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
                         )}
                         {inc.dueDate && (
                           <span className="text-[10px] text-muted-foreground">{formatShortDate(inc.dueDate)}</span>
@@ -346,7 +346,7 @@ export function IncomeSection({
                         ) : (
                           <Badge
                             variant="outline"
-                            className="text-[10px] text-emerald-600 border-emerald-200"
+                            className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
                           >
                             OK
                           </Badge>
@@ -366,12 +366,12 @@ export function IncomeSection({
               })
             )}
             {incomes.length > 0 && (
-              <TableRow className="bg-emerald-50/30 dark:bg-emerald-950/10 font-semibold">
-                <TableCell>Total</TableCell>
-                <TableCell className="text-right font-mono">
+              <TableRow className="bg-emerald-50/80 dark:bg-emerald-950/20 font-bold border-t-2 border-emerald-200 dark:border-emerald-900">
+                <TableCell className="text-base">Total</TableCell>
+                <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalExpected)}
                 </TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalReceived)}
                 </TableCell>
                 <TableCell />
