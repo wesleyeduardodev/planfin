@@ -127,5 +127,12 @@ export async function generateMonthlyPlan(
     }
   }
 
-  return plan
+  // Return the full plan with expenses and incomes
+  return prisma.monthlyPlan.findUnique({
+    where: { id: plan.id },
+    include: {
+      expenses: { include: { category: true }, orderBy: [{ period: "asc" }, { dueDate: "asc" }] },
+      incomes: { orderBy: [{ period: "asc" }, { description: "asc" }] },
+    },
+  })
 }

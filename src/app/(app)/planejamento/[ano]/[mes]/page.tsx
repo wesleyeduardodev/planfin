@@ -75,7 +75,9 @@ export default function PlanejamentoPage({
     queryKey: ["plan", year, month],
     queryFn: async () => {
       const res = await fetch(`/api/plans?year=${year}&month=${month}`)
+      if (!res.ok) return null
       const data = await res.json()
+      if (!data || !data.id) return null
       return data
     },
   })
