@@ -49,8 +49,8 @@ export async function POST(request: Request) {
           hashedPassword,
           settings: {
             create: {
-              salaryDay1: 1,
-              salaryDay2: 20,
+              periodCount: 2,
+              periodDays: [1, 20],
             },
           },
         },

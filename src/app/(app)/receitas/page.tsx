@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { CurrencyInput } from "@/components/shared/currency-input"
 import { formatCurrency } from "@/lib/format"
+import { getPeriodLabel } from "@/lib/periods"
 
 interface IncomeSource {
   id: string
@@ -51,6 +52,11 @@ interface Receivable {
   paidInstall: number
   period: number
   isActive: boolean
+}
+
+interface Settings {
+  periodCount: number
+  periodDays: number[]
 }
 
 export default function ReceitasPage() {
@@ -94,6 +100,21 @@ export default function ReceitasPage() {
     queryKey: ["receivables"],
     queryFn: () => fetch("/api/receivables").then((r) => r.json()),
   })
+
+  const { data: settings } = useQuery<Settings>({
+    queryKey: ["settings"],
+    queryFn: () => fetch("/api/settings").then((r) => r.json()),
+  })
+
+  const periodCount = settings?.periodCount ?? 2
+  const periodDays = settings?.periodDays ?? [1, 20]
+
+  function periodOptions() {
+    return Array.from({ length: periodCount }, (_, i) => {
+      const p = i + 1
+      return { value: String(p), label: getPeriodLabel(periodDays, p, 31) }
+    })
+  }
 
   // Income mutations
   const saveIncomeMutation = useMutation({
@@ -441,8 +462,11 @@ export default function ReceitasPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Período 1</SelectItem>
-                    <SelectItem value="2">Período 2</SelectItem>
+                    {periodOptions().map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -520,8 +544,11 @@ export default function ReceitasPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Período 1</SelectItem>
-                    <SelectItem value="2">Período 2</SelectItem>
+                    {periodOptions().map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

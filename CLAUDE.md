@@ -1,7 +1,7 @@
 # PlanFin — Sistema de Planejamento Financeiro Mensal
 
 ## Visao Geral
-Aplicacao web que substitui planilha Excel de orcamento mensal. Divide o mes em 2 periodos (alinhados com 2 salarios — dia 1 e dia 20), lista despesas por periodo, registra pagamentos e calcula saldo.
+Aplicacao web que substitui planilha Excel de orcamento mensal. Divide o mes em N periodos (configuravel por usuario, sem limite rigido), lista despesas por periodo, registra pagamentos e calcula saldo.
 
 ## Stack
 - **Next.js 16** (App Router) + TypeScript
@@ -77,6 +77,7 @@ src/
     auth.ts              # Config NextAuth
     calculations.ts      # Logica de saldo e totais
     plan-generator.ts    # Auto-gerar plano mensal
+    periods.ts           # Helper de labels e ranges de periodos
     format.ts            # Formatacao R$ e datas pt-BR
     api-utils.ts         # Helpers de response API
     utils.ts             # cn() para classNames
@@ -87,20 +88,22 @@ src/
 
 ## Banco de Dados — Models Prisma
 - **User** — usuario (email unico, senha hash com bcryptjs)
-- **Settings** — salaryDay1 (default 1), salaryDay2 (default 20)
+- **Settings** — periodCount (sem limite, default 2), periodDays Int[] (default [1,20])
 - **Category** — nome, cor hex, ordem (unique por user+nome)
-- **RecurringExpense** — template recorrente (periodo 1 ou 2, isVariable para cartoes)
+- **RecurringExpense** — template recorrente (periodo 1 a N, isVariable para cartoes)
 - **IncomeSource** — receita fixa (salarios)
 - **Receivable** — recebiveis parcelados (devedor, parcelas)
-- **MonthlyPlan** — plano mensal (unique por user+ano+mes)
+- **MonthlyPlan** — plano mensal (unique por user+ano+mes, cutDays Int[] define periodos)
 - **PlanExpense** — despesa do plano (plannedAmount, paidAmount; restante = planned - paid)
 - **PlanIncome** — receita do plano (expectedAmount, receivedAmount)
 
 ## Logica de Negocio
-- **2 periodos por mes**: P1 (dia 1 ao cutDay2) e P2 (cutDay2+1 ao fim do mes)
+- **N periodos por mes** (sem limite rigido): configuravel via Settings.periodCount e Settings.periodDays
+- Cada periodo vai de cutDays[i] ate cutDays[i+1]-1 (ultimo vai ate fim do mes)
 - **Gerar mes**: cria MonthlyPlan + popula PlanExpense de RecurringExpense + PlanIncome de IncomeSource/Receivable
-- **Saldo**: P1.entrada = saldo_anterior; P2.entrada = diferenca_P1; saldo_final = diferenca_P2
+- **Saldo**: encadeado — saldo de cada periodo = entrada + receitas - despesas, passa como entrada do proximo
 - **restante** = plannedAmount - paidAmount (sempre calculado, nunca armazenado)
+- **Ao reduzir periodos**: itens com period > novoPeriodCount sao reclassificados para o ultimo periodo
 
 ## Convencoes
 - Locale: pt-BR (moeda R$, datas dd/MM/yyyy)

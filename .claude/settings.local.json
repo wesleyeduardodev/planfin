@@ -10,7 +10,11 @@
       "Bash(rm:*)",
       "Bash(psql:*)",
       "Bash(\"/c/Program:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(npm run:*)",
+      "Bash(ls:*)",
+      "Bash(npx:*)"
     ]
   }
 }

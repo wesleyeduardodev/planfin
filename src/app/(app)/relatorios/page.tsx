@@ -35,8 +35,7 @@ interface ReportData {
     totalPaid: number
     balance: number
     initialBalance: number
-    p1Expenses: number
-    p2Expenses: number
+    [key: string]: number
   }[]
   categoryData: Record<
     string,
@@ -79,14 +78,32 @@ export default function RelatoriosPage() {
     )
   }
 
-  const chartData = data.monthlySummary.map((d) => ({
-    name: `${getMonthName(d.month).slice(0, 3)}/${d.year.toString().slice(2)}`,
-    receitas: d.totalIncome,
-    despesas: d.totalExpenses,
-    saldo: d.balance,
-    p1: d.p1Expenses,
-    p2: d.p2Expenses,
-  }))
+  // Detectar quantidade máxima de períodos nos dados (sem limite fixo)
+  const maxPeriods = data.monthlySummary.reduce((max, d) => {
+    let count = 0
+    for (let p = 1; p <= 31; p++) {
+      if (d[`p${p}Expenses`] !== undefined) count = p
+    }
+    return Math.max(max, count)
+  }, 1)
+
+  const periodColors = [
+    "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444",
+    "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
+  ]
+
+  const chartData = data.monthlySummary.map((d) => {
+    const entry: Record<string, string | number> = {
+      name: `${getMonthName(d.month).slice(0, 3)}/${d.year.toString().slice(2)}`,
+      receitas: d.totalIncome,
+      despesas: d.totalExpenses,
+      saldo: d.balance,
+    }
+    for (let p = 1; p <= maxPeriods; p++) {
+      entry[`p${p}`] = d[`p${p}Expenses`] ?? 0
+    }
+    return entry
+  })
 
   // Category stacked bar data
   const categoryColors: Record<string, string> = {}
@@ -167,7 +184,7 @@ export default function RelatoriosPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Período 1 vs Período 2
+              Despesas por Período
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -178,8 +195,14 @@ export default function RelatoriosPage() {
                 <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={currencyFormatter} />
                 <Legend />
-                <Bar dataKey="p1" fill="#3b82f6" name="Período 1" />
-                <Bar dataKey="p2" fill="#8b5cf6" name="Período 2" />
+                {Array.from({ length: maxPeriods }, (_, i) => (
+                  <Bar
+                    key={`p${i + 1}`}
+                    dataKey={`p${i + 1}`}
+                    fill={periodColors[i] ?? "#6b7280"}
+                    name={`Período ${i + 1}`}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

@@ -15,8 +15,8 @@ export async function generateMonthlyPlan(
 
   // Get user settings
   const settings = await prisma.settings.findUnique({ where: { userId } })
-  const cutDay1 = settings?.salaryDay1 ?? 1
-  const cutDay2 = settings?.salaryDay2 ?? 20
+  const periodDays = settings?.periodDays ?? [1, 20]
+  const periodCount = settings?.periodCount ?? 2
 
   // Calculate initial balance from previous month
   let initialBalance = 0
@@ -28,21 +28,18 @@ export async function generateMonthlyPlan(
   })
 
   if (prevPlan) {
-    const totalIncomeP1 = prevPlan.incomes
-      .filter((i) => i.period === 1)
-      .reduce((s, i) => s + i.expectedAmount, 0)
-    const totalExpensesP1 = prevPlan.expenses
-      .filter((e) => e.period === 1)
-      .reduce((s, e) => s + e.plannedAmount, 0)
-    const balanceP1 = prevPlan.initialBalance + totalIncomeP1 - totalExpensesP1
-
-    const totalIncomeP2 = prevPlan.incomes
-      .filter((i) => i.period === 2)
-      .reduce((s, i) => s + i.expectedAmount, 0)
-    const totalExpensesP2 = prevPlan.expenses
-      .filter((e) => e.period === 2)
-      .reduce((s, e) => s + e.plannedAmount, 0)
-    initialBalance = balanceP1 + totalIncomeP2 - totalExpensesP2
+    const prevPeriodCount = prevPlan.cutDays.length
+    let balance = prevPlan.initialBalance
+    for (let p = 1; p <= prevPeriodCount; p++) {
+      const income = prevPlan.incomes
+        .filter((i) => i.period === p)
+        .reduce((s, i) => s + i.expectedAmount, 0)
+      const expenses = prevPlan.expenses
+        .filter((e) => e.period === p)
+        .reduce((s, e) => s + e.plannedAmount, 0)
+      balance = balance + income - expenses
+    }
+    initialBalance = balance
   }
 
   // Create the plan
@@ -51,8 +48,7 @@ export async function generateMonthlyPlan(
       userId,
       year,
       month,
-      cutDay1,
-      cutDay2,
+      cutDays: periodDays,
       initialBalance,
     },
   })
@@ -65,6 +61,8 @@ export async function generateMonthlyPlan(
   const daysInMonth = new Date(year, month, 0).getDate()
 
   for (const re of recurringExpenses) {
+    // Garantir que o período não excede o periodCount atual
+    const period = Math.min(re.period, periodCount)
     const dueDay = re.dueDay
       ? Math.min(re.dueDay, daysInMonth)
       : undefined
@@ -72,7 +70,7 @@ export async function generateMonthlyPlan(
     await prisma.planExpense.create({
       data: {
         planId: plan.id,
-        period: re.period,
+        period,
         description: re.description,
         dueDate: dueDay
           ? new Date(Date.UTC(year, month - 1, dueDay, 12, 0, 0))
@@ -91,10 +89,11 @@ export async function generateMonthlyPlan(
   })
 
   for (const is of incomeSources) {
+    const period = Math.min(is.period, periodCount)
     await prisma.planIncome.create({
       data: {
         planId: plan.id,
-        period: is.period,
+        period,
         description: is.description,
         expectedAmount: is.amount,
         receivedAmount: 0,
@@ -114,10 +113,11 @@ export async function generateMonthlyPlan(
   for (const r of receivables) {
     if (r.paidInstall < r.totalInstall) {
       const currentInstall = r.paidInstall + 1
+      const period = Math.min(r.period, periodCount)
       await prisma.planIncome.create({
         data: {
           planId: plan.id,
-          period: r.period,
+          period,
           description: `${r.debtor} (${currentInstall}/${r.totalInstall})`,
           expectedAmount: r.installment,
           receivedAmount: 0,

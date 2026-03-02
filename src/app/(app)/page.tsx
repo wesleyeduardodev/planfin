@@ -15,14 +15,20 @@ import { formatCurrency, formatShortDate, getMonthName, nowBR } from "@/lib/form
 import { cn } from "@/lib/utils"
 import { BalanceChart } from "@/components/reports/balance-chart"
 
+interface PeriodData {
+  period: number
+  income: number
+  expenses: number
+  balance: number
+}
+
 interface DashboardData {
   currentSummary: {
     totalIncome: number
     totalExpenses: number
     totalPaid: number
     balance: number
-    period1: { income: number; expenses: number; balance: number }
-    period2: { income: number; expenses: number }
+    periods: PeriodData[]
   } | null
   monthlyData: {
     year: number
@@ -156,63 +162,49 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Period comparison */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">
-                  Período 1
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Receitas</span>
-                  <span className="font-mono text-emerald-600">
-                    {formatCurrency(summary.period1.income)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Despesas</span>
-                  <span className="font-mono text-red-500">
-                    {formatCurrency(summary.period1.expenses)}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t pt-2 font-semibold">
-                  <span>Saldo</span>
-                  <span
-                    className={cn(
-                      "font-mono",
-                      summary.period1.balance >= 0
-                        ? "text-emerald-600"
-                        : "text-red-500"
-                    )}
-                  >
-                    {formatCurrency(summary.period1.balance)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">
-                  Período 2
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Receitas</span>
-                  <span className="font-mono text-emerald-600">
-                    {formatCurrency(summary.period2.income)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Despesas</span>
-                  <span className="font-mono text-red-500">
-                    {formatCurrency(summary.period2.expenses)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Period comparison - dynamic */}
+          <div
+            className="grid grid-cols-1 gap-4"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(summary.periods.length, 3)}, minmax(0, 1fr))`,
+            }}
+          >
+            {summary.periods.map((pd) => (
+              <Card key={pd.period}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Período {pd.period}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Receitas</span>
+                    <span className="font-mono text-emerald-600">
+                      {formatCurrency(pd.income)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Despesas</span>
+                    <span className="font-mono text-red-500">
+                      {formatCurrency(pd.expenses)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2 font-semibold">
+                    <span>Saldo</span>
+                    <span
+                      className={cn(
+                        "font-mono",
+                        pd.balance >= 0
+                          ? "text-emerald-600"
+                          : "text-red-500"
+                      )}
+                    >
+                      {formatCurrency(pd.balance)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* Upcoming expenses */}

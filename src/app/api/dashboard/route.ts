@@ -73,7 +73,7 @@ export async function GET() {
       }
     })
 
-    // Current month summary
+    // Current month summary with dynamic periods
     let currentSummary = null
     if (currentPlan) {
       const totalIncome = currentPlan.incomes.reduce(
@@ -89,33 +89,28 @@ export async function GET() {
         0
       )
 
-      const p1Income = currentPlan.incomes
-        .filter((i) => i.period === 1)
-        .reduce((s, i) => s + i.expectedAmount, 0)
-      const p1Expenses = currentPlan.expenses
-        .filter((e) => e.period === 1)
-        .reduce((s, e) => s + e.plannedAmount, 0)
-      const p2Income = currentPlan.incomes
-        .filter((i) => i.period === 2)
-        .reduce((s, i) => s + i.expectedAmount, 0)
-      const p2Expenses = currentPlan.expenses
-        .filter((e) => e.period === 2)
-        .reduce((s, e) => s + e.plannedAmount, 0)
+      const periodCount = currentPlan.cutDays.length
+      const periods = []
+      let balance = currentPlan.initialBalance
+
+      for (let p = 1; p <= periodCount; p++) {
+        const income = currentPlan.incomes
+          .filter((i) => i.period === p)
+          .reduce((s, i) => s + i.expectedAmount, 0)
+        const expenses = currentPlan.expenses
+          .filter((e) => e.period === p)
+          .reduce((s, e) => s + e.plannedAmount, 0)
+        const periodBalance = balance + income - expenses
+        periods.push({ period: p, income, expenses, balance: periodBalance })
+        balance = periodBalance
+      }
 
       currentSummary = {
         totalIncome,
         totalExpenses,
         totalPaid,
         balance: currentPlan.initialBalance + totalIncome - totalExpenses,
-        period1: {
-          income: p1Income,
-          expenses: p1Expenses,
-          balance: currentPlan.initialBalance + p1Income - p1Expenses,
-        },
-        period2: {
-          income: p2Income,
-          expenses: p2Expenses,
-        },
+        periods,
       }
     }
 

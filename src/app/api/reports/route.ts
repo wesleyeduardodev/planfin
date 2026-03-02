@@ -28,12 +28,14 @@ export async function GET() {
       )
       const totalPaid = plan.expenses.reduce((s, e) => s + e.paidAmount, 0)
 
-      const p1Expenses = plan.expenses
-        .filter((e) => e.period === 1)
-        .reduce((s, e) => s + e.plannedAmount, 0)
-      const p2Expenses = plan.expenses
-        .filter((e) => e.period === 2)
-        .reduce((s, e) => s + e.plannedAmount, 0)
+      // Breakdown dinâmico por período
+      const periodCount = plan.cutDays.length
+      const periodExpenses: Record<string, number> = {}
+      for (let p = 1; p <= periodCount; p++) {
+        periodExpenses[`p${p}Expenses`] = plan.expenses
+          .filter((e) => e.period === p)
+          .reduce((s, e) => s + e.plannedAmount, 0)
+      }
 
       return {
         year: plan.year,
@@ -43,8 +45,7 @@ export async function GET() {
         totalPaid,
         balance: plan.initialBalance + totalIncome - totalExpenses,
         initialBalance: plan.initialBalance,
-        p1Expenses,
-        p2Expenses,
+        ...periodExpenses,
       }
     })
 

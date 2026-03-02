@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Save, Download } from "lucide-react"
+import { Save, Download, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,14 +13,13 @@ import { PageHeader } from "@/components/shared/page-header"
 
 interface Settings {
   id: string
-  salaryDay1: number
-  salaryDay2: number
+  periodCount: number
+  periodDays: number[]
 }
 
 export default function ConfiguracoesPage() {
   const queryClient = useQueryClient()
-  const [day1, setDay1] = useState(1)
-  const [day2, setDay2] = useState(20)
+  const [periodDays, setPeriodDays] = useState<number[]>([1, 20])
 
   const { data: settings, isLoading } = useQuery<Settings>({
     queryKey: ["settings"],
@@ -29,26 +28,51 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     if (settings) {
-      setDay1(settings.salaryDay1)
-      setDay2(settings.salaryDay2)
+      setPeriodDays(settings.periodDays)
     }
   }, [settings])
+
+  function addPeriod() {
+    const count = periodDays.length + 1
+    // Calcular dia default dividindo o mês uniformemente
+    const step = Math.floor(30 / count)
+    const newDay = Math.min((periodDays[periodDays.length - 1] ?? 1) + step, 28)
+    // Garantir que não duplica
+    const finalDay = periodDays.includes(newDay) ? newDay + 1 : newDay
+    setPeriodDays([...periodDays, Math.min(finalDay, 31)])
+  }
+
+  function removePeriod(index: number) {
+    if (periodDays.length <= 1) return
+    setPeriodDays(periodDays.filter((_, i) => i !== index))
+  }
+
+  function handleDayChange(index: number, value: number) {
+    const newDays = [...periodDays]
+    newDays[index] = value
+    setPeriodDays(newDays)
+  }
+
+  const periodCount = periodDays.length
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ salaryDay1: day1, salaryDay2: day2 }),
+        body: JSON.stringify({ periodCount, periodDays }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erro ao salvar")
+      }
       return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] })
       toast.success("Configurações salvas")
     },
-    onError: () => toast.error("Erro ao salvar configurações"),
+    onError: (error: Error) => toast.error(error.message),
   })
 
   async function exportCSV() {
@@ -87,35 +111,61 @@ export default function ConfiguracoesPage() {
         {/* Period settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Dias de Corte dos Períodos</CardTitle>
+            <CardTitle className="text-base">Períodos do Mês</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Configure os dias que definem o início de cada período salarial.
-              Estes valores são usados ao gerar novos planos mensais.
+              Defina como dividir o mês em períodos. Cada período começa no dia
+              configurado e vai até o dia anterior ao próximo período (o último
+              vai até o fim do mês). Estes valores são usados ao gerar novos
+              planos mensais.
             </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Dia Período 1 (Salário 1)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={28}
-                  value={day1}
-                  onChange={(e) => setDay1(parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Dia Período 2 (Salário 2)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={28}
-                  value={day2}
-                  onChange={(e) => setDay2(parseInt(e.target.value) || 20)}
-                />
-              </div>
+
+            <div className="space-y-3">
+              {periodDays.map((day, i) => (
+                <div key={i} className="flex items-end gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-sm">
+                      Início do Período {i + 1}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={day}
+                      onChange={(e) =>
+                        handleDayChange(i, parseInt(e.target.value) || 1)
+                      }
+                      readOnly={i === 0}
+                      className={i === 0 ? "bg-muted" : ""}
+                    />
+                  </div>
+                  {i > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removePeriod(i)}
+                      className="text-muted-foreground hover:text-destructive shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPeriod}
+                className="mt-2"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Adicionar Período
+              </Button>
             </div>
+
             <Button
               className="mt-4"
               onClick={() => saveMutation.mutate()}

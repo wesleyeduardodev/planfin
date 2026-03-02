@@ -33,6 +33,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { CurrencyInput } from "@/components/shared/currency-input"
 import { formatCurrency } from "@/lib/format"
+import { getPeriodLabel } from "@/lib/periods"
 
 interface Category {
   id: string
@@ -50,6 +51,11 @@ interface RecurringExpense {
   isActive: boolean
   categoryId: string
   category: Category
+}
+
+interface Settings {
+  periodCount: number
+  periodDays: number[]
 }
 
 const emptyForm = {
@@ -78,6 +84,14 @@ export default function DespesasRecorrentesPage() {
     queryKey: ["categories"],
     queryFn: () => fetch("/api/categories").then((r) => r.json()),
   })
+
+  const { data: settings } = useQuery<Settings>({
+    queryKey: ["settings"],
+    queryFn: () => fetch("/api/settings").then((r) => r.json()),
+  })
+
+  const periodCount = settings?.periodCount ?? 2
+  const periodDays = settings?.periodDays ?? [1, 20]
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof form) => {
@@ -136,16 +150,12 @@ export default function DespesasRecorrentesPage() {
     setDialogOpen(true)
   }
 
-  const p1Expenses = expenses.filter((e) => e.period === 1)
-  const p2Expenses = expenses.filter((e) => e.period === 2)
-
   function renderTable(items: RecurringExpense[], period: number) {
+    const label = getPeriodLabel(periodDays, period, 31)
     return (
-      <div className="rounded-lg border bg-card">
+      <div key={period} className="rounded-lg border bg-card">
         <div className="px-4 py-3 border-b">
-          <h3 className="font-semibold">
-            Período {period} {period === 1 ? "(Dia 1 a 20)" : "(Dia 21 a 31)"}
-          </h3>
+          <h3 className="font-semibold">{label}</h3>
         </div>
         <Table>
           <TableHeader>
@@ -237,8 +247,11 @@ export default function DespesasRecorrentesPage() {
         <p className="text-muted-foreground">Carregando...</p>
       ) : (
         <div className="space-y-6">
-          {renderTable(p1Expenses, 1)}
-          {renderTable(p2Expenses, 2)}
+          {Array.from({ length: periodCount }, (_, i) => {
+            const p = i + 1
+            const items = expenses.filter((e) => e.period === p)
+            return renderTable(items, p)
+          })}
         </div>
       )}
 
@@ -313,8 +326,14 @@ export default function DespesasRecorrentesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Período 1 (Dia 1-20)</SelectItem>
-                    <SelectItem value="2">Período 2 (Dia 21-31)</SelectItem>
+                    {Array.from({ length: periodCount }, (_, i) => {
+                      const p = i + 1
+                      return (
+                        <SelectItem key={p} value={String(p)}>
+                          {getPeriodLabel(periodDays, p, 31)}
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
