@@ -1,0 +1,265 @@
+"use client"
+
+import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { Check, Trash2, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { formatCurrency } from "@/lib/format"
+import { cn } from "@/lib/utils"
+
+interface PlanIncome {
+  id: string
+  period: number
+  description: string
+  expectedAmount: number
+  receivedAmount: number
+}
+
+interface IncomeSectionProps {
+  planId: string
+  incomes: PlanIncome[]
+  period: number
+  year: number
+  month: number
+  onAddIncome: () => void
+}
+
+export function IncomeSection({
+  incomes,
+  year,
+  month,
+  onAddIncome,
+}: IncomeSectionProps) {
+  const queryClient = useQueryClient()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const [editField, setEditField] = useState<"expected" | "received">("expected")
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { expectedAmount?: number; receivedAmount?: number }
+    }) => {
+      const res = await fetch(`/api/plans/incomes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error()
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setEditingId(null)
+    },
+    onError: () => toast.error("Erro ao atualizar"),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/plans/incomes/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setDeleteId(null)
+      toast.success("Receita removida")
+    },
+    onError: () => toast.error("Erro ao remover"),
+  })
+
+  function startEdit(income: PlanIncome, field: "expected" | "received") {
+    setEditingId(income.id)
+    setEditField(field)
+    setEditValue(
+      field === "expected"
+        ? income.expectedAmount.toFixed(2).replace(".", ",")
+        : income.receivedAmount.toFixed(2).replace(".", ",")
+    )
+  }
+
+  function commitEdit(id: string) {
+    const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
+    if (isNaN(parsed)) {
+      setEditingId(null)
+      return
+    }
+    const data =
+      editField === "expected"
+        ? { expectedAmount: parsed }
+        : { receivedAmount: parsed }
+    updateMutation.mutate({ id, data })
+  }
+
+  function receiveFull(income: PlanIncome) {
+    updateMutation.mutate({
+      id: income.id,
+      data: { receivedAmount: income.expectedAmount },
+    })
+  }
+
+  const totalExpected = incomes.reduce((s, i) => s + i.expectedAmount, 0)
+  const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
+
+  return (
+    <>
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="px-4 py-2 border-b flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20">
+          <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+            Receitas
+          </h4>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={onAddIncome}
+          >
+            <Plus className="mr-1 h-3 w-3" /> Entrada
+          </Button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="text-right w-28">Esperado</TableHead>
+              <TableHead className="text-right w-28">Recebido</TableHead>
+              <TableHead className="w-20 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {incomes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-sm">
+                  Nenhuma receita
+                </TableCell>
+              </TableRow>
+            ) : (
+              incomes.map((inc) => {
+                const isReceived = inc.receivedAmount >= inc.expectedAmount
+
+                return (
+                  <TableRow key={inc.id}>
+                    <TableCell className="text-sm">{inc.description}</TableCell>
+                    <TableCell className="text-right">
+                      {editingId === inc.id && editField === "expected" ? (
+                        <input
+                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => commitEdit(inc.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(inc.id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className="font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer"
+                          onClick={() => startEdit(inc, "expected")}
+                        >
+                          {formatCurrency(inc.expectedAmount)}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {editingId === inc.id && editField === "received" ? (
+                        <input
+                          className="w-full text-right text-sm border rounded px-2 py-1 bg-background"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => commitEdit(inc.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(inc.id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className={cn(
+                            "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
+                            isReceived && "text-emerald-600"
+                          )}
+                          onClick={() => startEdit(inc, "received")}
+                        >
+                          {formatCurrency(inc.receivedAmount)}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-0.5">
+                        {!isReceived ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => receiveFull(inc)}
+                            title="Marcar como recebido"
+                          >
+                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          </Button>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] text-emerald-600 border-emerald-200"
+                          >
+                            OK
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setDeleteId(inc.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+            {incomes.length > 0 && (
+              <TableRow className="bg-emerald-50/30 dark:bg-emerald-950/10 font-semibold">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(totalExpected)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(totalReceived)}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Remover Receita"
+        description="Remover esta receita do plano?"
+        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        loading={deleteMutation.isPending}
+      />
+    </>
+  )
+}

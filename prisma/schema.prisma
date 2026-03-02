@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  hashedPassword String   @map("hashed_password")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  settings          Settings?
+  categories        Category[]
+  recurringExpenses RecurringExpense[]
+  incomeSources     IncomeSource[]
+  receivables       Receivable[]
+  monthlyPlans      MonthlyPlan[]
+
+  @@map("users")
+}
+
+model Settings {
+  id         String @id @default(cuid())
+  userId     String @unique @map("user_id")
+  salaryDay1 Int    @default(1) @map("salary_day_1")
+  salaryDay2 Int    @default(20) @map("salary_day_2")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+model Category {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  name   String
+  color  String @default("#6366f1")
+  order  Int    @default(0)
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringExpenses RecurringExpense[]
+  planExpenses      PlanExpense[]
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model RecurringExpense {
+  id          String  @id @default(cuid())
+  userId      String  @map("user_id")
+  categoryId  String  @map("category_id")
+  description String
+  amount      Float
+  period      Int
+  dueDay      Int?    @map("due_day")
+  isVariable  Boolean @default(false) @map("is_variable")
+  isActive    Boolean @default(true) @map("is_active")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  planExpenses PlanExpense[]
+
+  @@map("recurring_expenses")
+}
+
+model IncomeSource {
+  id          String  @id @default(cuid())
+  userId      String  @map("user_id")
+  description String
+  amount      Float
+  period      Int
+  isActive    Boolean @default(true) @map("is_active")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planIncomes PlanIncome[]
+
+  @@map("income_sources")
+}
+
+model Receivable {
+  id           String  @id @default(cuid())
+  userId       String  @map("user_id")
+  debtor       String
+  installment  Float
+  totalInstall Int     @map("total_install")
+  paidInstall  Int     @default(0) @map("paid_install")
+  period       Int
+  isActive     Boolean @default(true) @map("is_active")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planIncomes PlanIncome[]
+
+  @@map("receivables")
+}
+
+model MonthlyPlan {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  year           Int
+  month          Int
+  cutDay1        Int      @default(1) @map("cut_day_1")
+  cutDay2        Int      @default(20) @map("cut_day_2")
+  initialBalance Float    @default(0) @map("initial_balance")
+  status         String   @default("open")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses PlanExpense[]
+  incomes  PlanIncome[]
+
+  @@unique([userId, year, month])
+  @@map("monthly_plans")
+}
+
+model PlanExpense {
+  id                 String    @id @default(cuid())
+  planId             String    @map("plan_id")
+  period             Int
+  description        String
+  dueDate            DateTime? @map("due_date")
+  plannedAmount      Float     @map("planned_amount")
+  paidAmount         Float     @default(0) @map("paid_amount")
+  categoryId         String?   @map("category_id")
+  recurringExpenseId String?   @map("recurring_expense_id")
+
+  plan             MonthlyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category         Category?         @relation(fields: [categoryId], references: [id])
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id])
+
+  @@map("plan_expenses")
+}
+
+model PlanIncome {
+  id             String  @id @default(cuid())
+  planId         String  @map("plan_id")
+  period         Int
+  description    String
+  expectedAmount Float   @map("expected_amount")
+  receivedAmount Float   @default(0) @map("received_amount")
+  incomeSourceId String? @map("income_source_id")
+  receivableId   String? @map("receivable_id")
+
+  plan         MonthlyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  incomeSource IncomeSource? @relation(fields: [incomeSourceId], references: [id])
+  receivable   Receivable?   @relation(fields: [receivableId], references: [id])
+
+  @@map("plan_incomes")
+}
