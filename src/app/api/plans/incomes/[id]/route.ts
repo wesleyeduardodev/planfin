@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, unauthorized, serverError } from "@/lib/api-utils"
+import { toNoonUTC } from "@/lib/format"
 
 export async function PUT(
   request: Request,
@@ -27,6 +28,8 @@ export async function PUT(
         description: data.description,
         expectedAmount: data.expectedAmount,
         receivedAmount: data.receivedAmount,
+        dueDate: data.dueDate !== undefined ? (data.dueDate ? toNoonUTC(data.dueDate) : null) : undefined,
+        isFixed: data.isFixed,
       },
     })
     return NextResponse.json(updated)

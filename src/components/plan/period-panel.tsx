@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, CreditCard } from "lucide-react"
+import { Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -25,6 +25,7 @@ interface PlanExpense {
   dueDate: string | null
   plannedAmount: number
   paidAmount: number
+  isFixed: boolean
   categoryId: string | null
   recurringExpenseId: string | null
   category: { id: string; name: string; color: string } | null
@@ -288,7 +289,6 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
             {expenses.map((exp) => {
               const remaining = exp.plannedAmount - exp.paidAmount
               const isPaid = remaining <= 0
-              const isVariable = !!exp.recurringExpenseId && exp.plannedAmount === 0
 
               return (
                 <div
@@ -305,8 +305,10 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                       <span className={cn("text-sm font-medium truncate", isPaid && "line-through text-muted-foreground")}>
                         {exp.description}
                       </span>
-                      {isVariable && (
-                        <CreditCard className="h-3 w-3 text-amber-500 shrink-0" />
+                      {exp.isFixed ? (
+                        <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] shrink-0">Variável</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
@@ -419,7 +421,6 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
               expenses.map((exp) => {
                 const remaining = exp.plannedAmount - exp.paidAmount
                 const isPaid = remaining <= 0
-                const isVariable = !!exp.recurringExpenseId && exp.plannedAmount === 0
 
                 return (
                   <TableRow
@@ -432,8 +433,10 @@ export function PeriodPanel({ expenses, year, month }: PeriodPanelProps) {
                         <span className={cn("text-sm", isPaid && "line-through text-muted-foreground")}>
                           {exp.description}
                         </span>
-                        {isVariable && (
-                          <CreditCard className="h-3 w-3 text-amber-500 shrink-0" />
+                        {exp.isFixed ? (
+                          <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px]">Variável</Badge>
                         )}
                       </div>
                     </TableCell>

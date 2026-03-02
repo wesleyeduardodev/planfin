@@ -30,6 +30,7 @@ export async function PUT(
         dueDate: data.dueDate !== undefined ? (data.dueDate ? toNoonUTC(data.dueDate) : null) : undefined,
         plannedAmount: data.plannedAmount,
         paidAmount: data.paidAmount,
+        isFixed: data.isFixed,
         categoryId: data.categoryId,
       },
       include: { category: true },

@@ -35,6 +35,8 @@ export function AddIncomeDialog({
   const [form, setForm] = useState({
     description: "",
     expectedAmount: 0,
+    dueDate: "",
+    isFixed: true,
   })
 
   const mutation = useMutation({
@@ -47,6 +49,8 @@ export function AddIncomeDialog({
           period,
           description: form.description,
           expectedAmount: form.expectedAmount,
+          dueDate: form.dueDate || null,
+          isFixed: form.isFixed,
         }),
       })
       if (!res.ok) throw new Error()
@@ -55,7 +59,7 @@ export function AddIncomeDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", expectedAmount: 0 })
+      setForm({ description: "", expectedAmount: 0, dueDate: "", isFixed: true })
       toast.success("Receita adicionada")
     },
     onError: () => toast.error("Erro ao adicionar receita"),
@@ -92,6 +96,23 @@ export function AddIncomeDialog({
               onChange={(v) => setForm({ ...form, expectedAmount: v })}
             />
           </div>
+          <div className="space-y-2">
+            <Label>Data</Label>
+            <Input
+              type="date"
+              value={form.dueDate}
+              onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+            />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isFixed}
+              onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
+              className="h-4 w-4 rounded border-border"
+            />
+            <span className="text-sm">Entrada fixa</span>
+          </label>
           <div className="flex justify-end gap-2">
             <Button
               type="button"

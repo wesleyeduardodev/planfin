@@ -24,6 +24,7 @@ export async function POST(request: Request) {
         dueDate: data.dueDate ? toNoonUTC(data.dueDate) : undefined,
         plannedAmount: data.plannedAmount,
         paidAmount: data.paidAmount ?? 0,
+        isFixed: data.isFixed ?? true,
         categoryId: data.categoryId,
       },
       include: { category: true },

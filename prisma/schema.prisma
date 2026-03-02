@@ -126,6 +126,7 @@ model PlanExpense {
   dueDate            DateTime? @map("due_date")
   plannedAmount      Float     @map("planned_amount")
   paidAmount         Float     @default(0) @map("paid_amount")
+  isFixed            Boolean   @default(true) @map("is_fixed")
   categoryId         String?   @map("category_id")
   recurringExpenseId String?   @map("recurring_expense_id")
 
@@ -137,12 +138,14 @@ model PlanExpense {
 }
 
 model PlanIncome {
-  id             String  @id @default(cuid())
-  planId         String  @map("plan_id")
+  id             String    @id @default(cuid())
+  planId         String    @map("plan_id")
   period         Int
   description    String
-  expectedAmount Float   @map("expected_amount")
-  receivedAmount Float   @default(0) @map("received_amount")
+  expectedAmount Float     @map("expected_amount")
+  receivedAmount Float     @default(0) @map("received_amount")
+  dueDate        DateTime? @map("due_date")
+  isFixed        Boolean   @default(true) @map("is_fixed")
   incomeSourceId String? @map("income_source_id")
   receivableId   String? @map("receivable_id")
 

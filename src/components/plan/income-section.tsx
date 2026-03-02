@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency, formatShortDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 interface PlanIncome {
@@ -24,6 +24,8 @@ interface PlanIncome {
   description: string
   expectedAmount: number
   receivedAmount: number
+  dueDate: string | null
+  isFixed: boolean
 }
 
 interface IncomeSectionProps {
@@ -183,7 +185,17 @@ export function IncomeSection({
                 return (
                   <div key={inc.id} className={cn("rounded-lg border p-3 space-y-2", isReceived && "opacity-60")}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium truncate flex-1">{inc.description}</span>
+                      <div className="flex items-center gap-1.5 truncate flex-1">
+                        <span className="text-sm font-medium truncate">{inc.description}</span>
+                        {inc.isFixed ? (
+                          <Badge variant="outline" className="text-[10px] shrink-0 text-blue-600 border-blue-200">Fixo</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] shrink-0">Variável</Badge>
+                        )}
+                        {inc.dueDate && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">{formatShortDate(inc.dueDate)}</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-0.5 shrink-0">
                         {!isReceived ? (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => receiveFull(inc)} title="Marcar como recebido">
@@ -249,7 +261,19 @@ export function IncomeSection({
 
                 return (
                   <TableRow key={inc.id}>
-                    <TableCell className="text-sm">{inc.description}</TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex items-center gap-1.5">
+                        {inc.description}
+                        {inc.isFixed ? (
+                          <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-200">Fixo</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px]">Variável</Badge>
+                        )}
+                        {inc.dueDate && (
+                          <span className="text-[10px] text-muted-foreground">{formatShortDate(inc.dueDate)}</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(inc, "expected")}
                     </TableCell>

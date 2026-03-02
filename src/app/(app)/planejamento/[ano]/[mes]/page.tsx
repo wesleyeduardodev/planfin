@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wand2,
+  Copy,
   Plus,
   Trash2,
   X,
@@ -40,6 +41,7 @@ interface PlanExpense {
   dueDate: string | null
   plannedAmount: number
   paidAmount: number
+  isFixed: boolean
   categoryId: string | null
   recurringExpenseId: string | null
   category: { id: string; name: string; color: string } | null
@@ -51,6 +53,8 @@ interface PlanIncome {
   description: string
   expectedAmount: number
   receivedAmount: number
+  dueDate: string | null
+  isFixed: boolean
   incomeSourceId: string | null
   receivableId: string | null
 }
@@ -98,11 +102,11 @@ export default function PlanejamentoPage({
   })
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (mode: "generate" | "copy-fixed" | "copy-all" = "generate") => {
       const res = await fetch("/api/plans/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year, month }),
+        body: JSON.stringify({ year, month, mode }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -280,22 +284,53 @@ export default function PlanejamentoPage({
           Carregando...
         </div>
       ) : !plan ? (
-        <div className="text-center py-20">
-          <h2 className="text-xl font-semibold mb-2">
-            Plano não encontrado
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Gere o plano para {getMonthName(month)} de {year} automaticamente
-            a partir das despesas recorrentes e receitas cadastradas.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending}
-          >
-            <Wand2 className="mr-2 h-5 w-5" />
-            {generateMutation.isPending ? "Gerando..." : "Gerar Mês"}
-          </Button>
+        <div className="py-12 max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-semibold mb-2">
+              Plano não encontrado
+            </h2>
+            <p className="text-muted-foreground">
+              Crie o plano para {getMonthName(month)} de {year}:
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+              onClick={() => generateMutation.mutate("generate")}
+              disabled={generateMutation.isPending}
+              className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-6 hover:border-primary hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <Wand2 className="h-8 w-8 text-primary" />
+              <span className="font-semibold text-sm">Gerar do Zero</span>
+              <span className="text-xs text-muted-foreground text-center">
+                A partir dos cadastros de despesas e receitas
+              </span>
+            </button>
+            <button
+              onClick={() => generateMutation.mutate("copy-fixed")}
+              disabled={generateMutation.isPending}
+              className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-6 hover:border-primary hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <Copy className="h-8 w-8 text-primary" />
+              <span className="font-semibold text-sm">Copiar Fixos</span>
+              <span className="text-xs text-muted-foreground text-center">
+                Copia períodos, despesas e receitas fixas do mês anterior
+              </span>
+            </button>
+            <button
+              onClick={() => generateMutation.mutate("copy-all")}
+              disabled={generateMutation.isPending}
+              className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-6 hover:border-primary hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <Copy className="h-8 w-8 text-primary" />
+              <span className="font-semibold text-sm">Copiar Tudo</span>
+              <span className="text-xs text-muted-foreground text-center">
+                Copia tudo do mês anterior
+              </span>
+            </button>
+          </div>
+          {generateMutation.isPending && (
+            <p className="text-center text-muted-foreground mt-4 text-sm">Gerando plano...</p>
+          )}
         </div>
       ) : (
         <>

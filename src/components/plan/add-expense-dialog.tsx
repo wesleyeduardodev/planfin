@@ -50,6 +50,7 @@ export function AddExpenseDialog({
     plannedAmount: 0,
     dueDate: "",
     categoryId: "",
+    isFixed: true,
   })
 
   const { data: categories = [] } = useQuery<Category[]>({
@@ -69,6 +70,7 @@ export function AddExpenseDialog({
           plannedAmount: form.plannedAmount,
           dueDate: form.dueDate || null,
           categoryId: form.categoryId || null,
+          isFixed: form.isFixed,
         }),
       })
       if (!res.ok) throw new Error()
@@ -77,7 +79,7 @@ export function AddExpenseDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", plannedAmount: 0, dueDate: "", categoryId: "" })
+      setForm({ description: "", plannedAmount: 0, dueDate: "", categoryId: "", isFixed: true })
       toast.success("Despesa adicionada")
     },
     onError: () => toast.error("Erro ao adicionar despesa"),
@@ -147,6 +149,15 @@ export function AddExpenseDialog({
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isFixed}
+              onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
+              className="h-4 w-4 rounded border-border"
+            />
+            <span className="text-sm">Despesa fixa</span>
+          </label>
           <div className="flex justify-end gap-2">
             <Button
               type="button"
