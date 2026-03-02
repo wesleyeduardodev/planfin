@@ -31,6 +31,14 @@ export async function DELETE(
   const { id } = await params
 
   try {
+    const usageCount = await prisma.planExpense.count({ where: { categoryId: id } })
+    if (usageCount > 0) {
+      return NextResponse.json(
+        { error: `Não é possível excluir: ${usageCount} despesa(s) vinculada(s). Reatribua as despesas antes de excluir.` },
+        { status: 400 }
+      )
+    }
+
     await prisma.category.delete({ where: { id, userId: user.id } })
     return NextResponse.json({ success: true })
   } catch (error) {

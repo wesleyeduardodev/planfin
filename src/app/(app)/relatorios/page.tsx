@@ -37,7 +37,9 @@ interface ReportData {
     totalIncome: number
     totalExpenses: number
     totalPaid: number
+    totalReceived: number
     balance: number
+    realBalance: number
     initialBalance: number
     [key: string]: number
   }[]
@@ -165,6 +167,7 @@ export default function RelatoriosPage() {
       receitas: d.totalIncome,
       despesas: d.totalExpenses,
       saldo: d.balance,
+      saldoReal: d.realBalance,
     }
     for (let p = 1; p <= maxPeriods; p++) {
       entry[`p${p}`] = d[`p${p}Expenses`] ?? 0
@@ -269,7 +272,8 @@ export default function RelatoriosPage() {
                 <Legend />
                 <Line type="monotone" dataKey="receitas" stroke="#10b981" strokeWidth={2} name="Receitas" />
                 <Line type="monotone" dataKey="despesas" stroke="#ef4444" strokeWidth={2} name="Despesas" />
-                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2.5} name="Saldo" dot={{ fill: "#3b82f6" }} />
+                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2.5} name="Saldo Projetado" dot={{ fill: "#3b82f6" }} />
+                <Line type="monotone" dataKey="saldoReal" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" name="Saldo Real" dot={{ fill: "#f59e0b" }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -346,7 +350,8 @@ export default function RelatoriosPage() {
                     <TableHead className="text-right">Receitas</TableHead>
                     <TableHead className="text-right">Despesas</TableHead>
                     <TableHead className="text-right">Pago</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
+                    <TableHead className="text-right">Saldo Projetado</TableHead>
+                    <TableHead className="text-right">Saldo Real</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -371,6 +376,14 @@ export default function RelatoriosPage() {
                         )}
                       >
                         {formatCurrency(d.balance)}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right font-mono font-semibold",
+                          d.realBalance >= 0 ? "text-emerald-600" : "text-red-500"
+                        )}
+                      >
+                        {formatCurrency(d.realBalance)}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -16,6 +16,10 @@ export async function POST(request: Request) {
     })
     if (!plan) return NextResponse.json({ error: "Plano não encontrado" }, { status: 404 })
 
+    if (!data.period || data.period < 1 || data.period > plan.cutDays.length) {
+      return NextResponse.json({ error: "Período inválido" }, { status: 400 })
+    }
+
     const expense = await prisma.planExpense.create({
       data: {
         planId: data.planId,

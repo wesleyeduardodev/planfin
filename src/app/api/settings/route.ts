@@ -46,6 +46,13 @@ export async function PUT(request: Request) {
       )
     }
 
+    if (periodDays[0] !== 1) {
+      return NextResponse.json(
+        { error: "O primeiro período deve começar no dia 1" },
+        { status: 400 }
+      )
+    }
+
     for (const day of periodDays) {
       if (!Number.isInteger(day) || day < 1 || day > 31) {
         return NextResponse.json(

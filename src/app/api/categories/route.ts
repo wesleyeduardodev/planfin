@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { getAuthUser, unauthorized, serverError } from "@/lib/api-utils"
+import { getAuthUser, unauthorized, badRequest, serverError } from "@/lib/api-utils"
 
 export async function GET() {
   const user = await getAuthUser()
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
     })
     return NextResponse.json(category)
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return badRequest("Categoria já existe")
+    }
     return serverError(error)
   }
 }

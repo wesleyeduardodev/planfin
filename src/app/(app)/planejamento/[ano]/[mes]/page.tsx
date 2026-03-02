@@ -413,7 +413,7 @@ export default function PlanejamentoPage({
               <TabsList className="w-full">
                 {periodData.map((pd) => (
                   <TabsTrigger key={pd.period} value={`p${pd.period}`} className="flex-1">
-                    P{pd.period}
+                    Per. {pd.period}
                   </TabsTrigger>
                 ))}
               </TabsList>

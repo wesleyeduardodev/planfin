@@ -11,6 +11,7 @@ Aplicacao web que substitui planilha Excel de orcamento mensal. Divide o mes em 
 - **Recharts** (graficos)
 - **TanStack Query 5** (estado client-side)
 - **React Hook Form** + **Zod** (formularios e validacao)
+- **pdfmake** (export PDF) + **exceljs** (export Excel)
 - Deploy: **Render**
 
 ## Comandos
@@ -59,7 +60,7 @@ src/
       dashboard/         # Dados do dashboard
       reports/           # Dados de relatorios
       settings/          # Configuracoes
-      export/            # Export CSV
+      export/            # Export PDF/Excel
   components/
     ui/                  # shadcn/ui (17 componentes)
     layout/              # Header, Sidebar, MainLayout
@@ -76,6 +77,8 @@ src/
     format.ts            # Formatacao R$ e datas pt-BR
     api-utils.ts         # Helpers de response API
     utils.ts             # cn() para classNames
+    export-pdf.ts        # Geração de PDF (pdfmake)
+    export-excel.ts      # Geração de Excel (exceljs)
   types/
     next-auth.d.ts       # Type augmentation
   middleware.ts          # Protecao de rotas
@@ -107,7 +110,7 @@ src/
 
 ## Fases de Implementacao
 - [x] Fase 1: Fundacao (Next.js, Prisma schema, NextAuth, login/registro, seed, layout)
-- [ ] Fase 2: Cadastros (CRUD categorias)
-- [ ] Fase 3: Planejamento core (gerar mes, tela 2 periodos, edicao inline, saldos)
-- [ ] Fase 4: Dashboard e Relatorios (graficos, resumos)
+- [x] Fase 2: Cadastros (CRUD categorias)
+- [x] Fase 3: Planejamento core (gerar mes, tela N periodos, edicao inline, saldos)
+- [x] Fase 4: Dashboard e Relatorios (graficos, resumos, export PDF/Excel) — parcial
 - [ ] Fase 5: Deploy (Render, responsividade, testes)

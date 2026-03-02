@@ -27,6 +27,11 @@ export async function GET() {
         0
       )
       const totalPaid = plan.expenses.reduce((s, e) => s + e.paidAmount, 0)
+      const totalReceived = plan.incomes.reduce(
+        (s, i) => s + i.receivedAmount,
+        0
+      )
+      const realBalance = plan.initialBalance + totalReceived - totalPaid
 
       // Breakdown dinâmico por período
       const periodCount = plan.cutDays.length
@@ -43,7 +48,9 @@ export async function GET() {
         totalIncome,
         totalExpenses,
         totalPaid,
+        totalReceived,
         balance: plan.initialBalance + totalIncome - totalExpenses,
+        realBalance,
         initialBalance: plan.initialBalance,
         ...periodExpenses,
       }
