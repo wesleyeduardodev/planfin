@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,6 +34,7 @@ interface PeriodPanelProps {
   planId: string
   expenses: PlanExpense[]
   period: number
+  periodCount: number
   year: number
   month: number
   onAddExpense: () => void
@@ -45,7 +46,7 @@ interface Category {
   color: string
 }
 
-export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanelProps) {
+export function PeriodPanel({ expenses, period, periodCount, year, month, onAddExpense }: PeriodPanelProps) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
@@ -79,6 +80,15 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
     updateMutation.mutate({
       id: expense.id,
       data: { isFixed: !expense.isFixed },
+    })
+  }
+
+  function movePeriod(expense: PlanExpense, direction: -1 | 1) {
+    const newPeriod = expense.period + direction
+    if (newPeriod < 1 || newPeriod > periodCount) return
+    updateMutation.mutate({
+      id: expense.id,
+      data: { period: newPeriod },
     })
   }
 
@@ -372,6 +382,16 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
+                      {periodCount > 1 && period > 1 && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, -1)} title="Mover para período anterior">
+                          <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
+                      {periodCount > 1 && period < periodCount && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, 1)} title="Mover para próximo período">
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
                       {!isPaid && (
                         <Button
                           variant="ghost"
@@ -567,6 +587,16 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
+                        {periodCount > 1 && period > 1 && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, -1)} title="Mover para período anterior">
+                            <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
+                        {periodCount > 1 && period < periodCount && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, 1)} title="Mover para próximo período">
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
                         {!isPaid && (
                           <Button
                             variant="ghost"

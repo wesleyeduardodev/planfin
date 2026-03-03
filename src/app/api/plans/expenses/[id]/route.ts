@@ -32,6 +32,7 @@ export async function PUT(
         paidAmount: data.paidAmount,
         isFixed: data.isFixed,
         categoryId: data.categoryId,
+        period: data.period,
       },
       include: { category: true },
     })

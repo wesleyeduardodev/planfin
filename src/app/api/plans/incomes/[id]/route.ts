@@ -30,6 +30,7 @@ export async function PUT(
         receivedAmount: data.receivedAmount,
         dueDate: data.dueDate !== undefined ? (data.dueDate ? toNoonUTC(data.dueDate) : null) : undefined,
         isFixed: data.isFixed,
+        period: data.period,
       },
     })
     return NextResponse.json(updated)

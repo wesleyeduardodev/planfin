@@ -379,6 +379,7 @@ export default function PlanejamentoPage({
                   planId={plan.id}
                   incomes={pd.incomes}
                   period={pd.period}
+                  periodCount={periodCount}
                   year={year}
                   month={month}
                   onAddIncome={() => {
@@ -390,6 +391,7 @@ export default function PlanejamentoPage({
                   planId={plan.id}
                   expenses={pd.expenses}
                   period={pd.period}
+                  periodCount={periodCount}
                   year={year}
                   month={month}
                   onAddExpense={() => {
@@ -436,6 +438,7 @@ export default function PlanejamentoPage({
                     planId={plan.id}
                     incomes={pd.incomes}
                     period={pd.period}
+                    periodCount={periodCount}
                     year={year}
                     month={month}
                     onAddIncome={() => {
@@ -447,6 +450,7 @@ export default function PlanejamentoPage({
                     planId={plan.id}
                     expenses={pd.expenses}
                     period={pd.period}
+                    periodCount={periodCount}
                     year={year}
                     month={month}
                     onAddExpense={() => {

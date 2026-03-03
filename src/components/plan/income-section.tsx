@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -32,6 +32,7 @@ interface IncomeSectionProps {
   planId: string
   incomes: PlanIncome[]
   period: number
+  periodCount: number
   year: number
   month: number
   onAddIncome: () => void
@@ -39,6 +40,8 @@ interface IncomeSectionProps {
 
 export function IncomeSection({
   incomes,
+  period,
+  periodCount,
   year,
   month,
   onAddIncome,
@@ -145,6 +148,15 @@ export function IncomeSection({
     updateMutation.mutate({
       id: income.id,
       data: { isFixed: !income.isFixed },
+    })
+  }
+
+  function movePeriod(income: PlanIncome, direction: -1 | 1) {
+    const newPeriod = income.period + direction
+    if (newPeriod < 1 || newPeriod > periodCount) return
+    updateMutation.mutate({
+      id: income.id,
+      data: { period: newPeriod },
     })
   }
 
@@ -309,6 +321,16 @@ export function IncomeSection({
                         </span>
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
+                        {periodCount > 1 && period > 1 && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, -1)} title="Mover para período anterior">
+                            <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
+                        {periodCount > 1 && period < periodCount && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, 1)} title="Mover para próximo período">
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
                         {!isReceived ? (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => receiveFull(inc)} title="Marcar como recebido">
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -416,6 +438,16 @@ export function IncomeSection({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
+                        {periodCount > 1 && period > 1 && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, -1)} title="Mover para período anterior">
+                            <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
+                        {periodCount > 1 && period < periodCount && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, 1)} title="Mover para próximo período">
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
                         {!isReceived ? (
                           <Button
                             variant="ghost"
