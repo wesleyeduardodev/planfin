@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { formatCurrency, formatShortDate } from "@/lib/format"
+import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 interface PlanIncome {
@@ -46,7 +46,7 @@ export function IncomeSection({
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [editField, setEditField] = useState<"expected" | "received" | "description">("expected")
+  const [editField, setEditField] = useState<"expected" | "received" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const updateMutation = useMutation({
@@ -55,7 +55,8 @@ export function IncomeSection({
       data,
     }: {
       id: string
-      data: { expectedAmount?: number; receivedAmount?: number; description?: string }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: Record<string, any>
     }) => {
       const res = await fetch(`/api/plans/incomes/${id}`, {
         method: "PUT",
@@ -85,11 +86,22 @@ export function IncomeSection({
     onError: () => toast.error("Erro ao remover"),
   })
 
-  function startEdit(income: PlanIncome, field: "expected" | "received" | "description") {
+  function startEdit(income: PlanIncome, field: "expected" | "received" | "description" | "date") {
     setEditingId(income.id)
     setEditField(field)
     if (field === "description") {
       setEditValue(income.description)
+    } else if (field === "date") {
+      if (income.dueDate) {
+        const d = new Date(income.dueDate)
+        const yyyy = d.getUTCFullYear()
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0")
+        const dd = String(d.getUTCDate()).padStart(2, "0")
+        setEditValue(`${yyyy}-${mm}-${dd}`)
+      } else {
+        const mm = String(month).padStart(2, "0")
+        setEditValue(`${year}-${mm}-01`)
+      }
     } else {
       setEditValue(
         field === "expected"
@@ -109,6 +121,14 @@ export function IncomeSection({
       updateMutation.mutate({ id, data: { description: trimmed } })
       return
     }
+    if (editField === "date") {
+      if (!editValue) {
+        updateMutation.mutate({ id, data: { dueDate: null } })
+        return
+      }
+      updateMutation.mutate({ id, data: { dueDate: `${editValue}T12:00:00Z` } })
+      return
+    }
     const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
     if (isNaN(parsed)) {
       setEditingId(null)
@@ -119,6 +139,13 @@ export function IncomeSection({
         ? { expectedAmount: parsed }
         : { receivedAmount: parsed }
     updateMutation.mutate({ id, data })
+  }
+
+  function toggleFixed(income: PlanIncome) {
+    updateMutation.mutate({
+      id: income.id,
+      data: { isFixed: !income.isFixed },
+    })
   }
 
   function receiveFull(income: PlanIncome) {
@@ -135,7 +162,6 @@ export function IncomeSection({
     })
   }
 
-  // Shared: inline currency editor
   function renderCurrencyEditor(inc: PlanIncome, field: "expected" | "received") {
     const value = field === "expected" ? inc.expectedAmount : inc.receivedAmount
     const isReceived = inc.receivedAmount >= inc.expectedAmount
@@ -165,6 +191,57 @@ export function IncomeSection({
       >
         {formatCurrency(value)}
       </button>
+    )
+  }
+
+  function renderDateEditor(inc: PlanIncome) {
+    if (editingId === inc.id && editField === "date") {
+      return (
+        <input
+          type="date"
+          className="w-36 text-sm border rounded px-1 py-1 bg-background"
+          value={editValue}
+          onChange={(e) => {
+            setEditValue(e.target.value)
+            if (e.target.value) {
+              const isoDate = `${e.target.value}T12:00:00Z`
+              updateMutation.mutate({ id: inc.id, data: { dueDate: isoDate } })
+            }
+          }}
+          onBlur={() => commitEdit(inc.id)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setEditingId(null)
+          }}
+          autoFocus
+        />
+      )
+    }
+    return (
+      <button
+        className="hover:bg-muted px-1 rounded cursor-pointer text-sm text-muted-foreground"
+        onClick={() => startEdit(inc, "date")}
+      >
+        {inc.dueDate ? formatDate(inc.dueDate) : "-"}
+      </button>
+    )
+  }
+
+  function renderTypeBadge(inc: PlanIncome) {
+    return inc.isFixed ? (
+      <Badge
+        variant="outline"
+        className="text-[10px] font-semibold cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50"
+        onClick={() => toggleFixed(inc)}
+      >
+        Fixo
+      </Badge>
+    ) : (
+      <Badge
+        className="text-[10px] font-semibold cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
+        onClick={() => toggleFixed(inc)}
+      >
+        Variável
+      </Badge>
     )
   }
 
@@ -226,14 +303,10 @@ export function IncomeSection({
                             {inc.description}
                           </button>
                         )}
-                        {inc.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
-                        ) : (
-                          <Badge className="text-[10px] font-semibold shrink-0 bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
-                        )}
-                        {inc.dueDate && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">{formatShortDate(inc.dueDate)}</span>
-                        )}
+                        {renderTypeBadge(inc)}
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {inc.dueDate ? formatDate(inc.dueDate) : ""}
+                        </span>
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
                         {!isReceived ? (
@@ -287,6 +360,8 @@ export function IncomeSection({
           <TableHeader>
             <TableRow>
               <TableHead>Descrição</TableHead>
+              <TableHead className="w-20">Tipo</TableHead>
+              <TableHead className="w-32">Data</TableHead>
               <TableHead className="text-right w-28">Esperado</TableHead>
               <TableHead className="text-right w-28">Recebido</TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
@@ -295,7 +370,7 @@ export function IncomeSection({
           <TableBody>
             {incomes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-sm">
+                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground text-sm">
                   Nenhuma receita
                 </TableCell>
               </TableRow>
@@ -306,36 +381,32 @@ export function IncomeSection({
                 return (
                   <TableRow key={inc.id}>
                     <TableCell className="text-sm">
-                      <div className="flex items-center gap-1.5">
-                        {editingId === inc.id && editField === "description" ? (
-                          <input
-                            className="text-sm border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => commitEdit(inc.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") commitEdit(inc.id)
-                              if (e.key === "Escape") setEditingId(null)
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          <button
-                            className="text-sm text-left hover:bg-muted px-1 rounded cursor-pointer"
-                            onClick={() => startEdit(inc, "description")}
-                          >
-                            {inc.description}
-                          </button>
-                        )}
-                        {inc.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] font-semibold text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
-                        ) : (
-                          <Badge className="text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
-                        )}
-                        {inc.dueDate && (
-                          <span className="text-[10px] text-muted-foreground">{formatShortDate(inc.dueDate)}</span>
-                        )}
-                      </div>
+                      {editingId === inc.id && editField === "description" ? (
+                        <input
+                          className="text-sm border rounded px-1 py-0.5 bg-background w-full min-w-0"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => commitEdit(inc.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(inc.id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className="text-sm text-left hover:bg-muted px-1 rounded cursor-pointer"
+                          onClick={() => startEdit(inc, "description")}
+                        >
+                          {inc.description}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {renderTypeBadge(inc)}
+                    </TableCell>
+                    <TableCell>
+                      {renderDateEditor(inc)}
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(inc, "expected")}
@@ -390,7 +461,7 @@ export function IncomeSection({
             )}
             {incomes.length > 0 && (
               <TableRow className="bg-emerald-50/80 dark:bg-emerald-950/20 font-bold border-t-2 border-emerald-200 dark:border-emerald-900">
-                <TableCell className="text-base">Total</TableCell>
+                <TableCell colSpan={3} className="text-base">Total</TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalExpected)}
                 </TableCell>

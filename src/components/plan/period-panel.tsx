@@ -75,6 +75,13 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
     }
   }, [categoryEditId])
 
+  function toggleFixed(expense: PlanExpense) {
+    updateMutation.mutate({
+      id: expense.id,
+      data: { isFixed: !expense.isFixed },
+    })
+  }
+
   const updateMutation = useMutation({
     mutationFn: async ({
       id,
@@ -469,6 +476,7 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
           <TableHeader>
             <TableRow>
               <TableHead>Descrição</TableHead>
+              <TableHead className="w-20">Tipo</TableHead>
               <TableHead className="w-32">Data</TableHead>
               <TableHead className="text-right w-28">Valor</TableHead>
               <TableHead className="text-right w-28">Pago</TableHead>
@@ -479,7 +487,7 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
           <TableBody>
             {expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   Nenhuma despesa
                 </TableCell>
               </TableRow>
@@ -516,12 +524,25 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
                             {exp.description}
                           </button>
                         )}
-                        {exp.isFixed ? (
-                          <Badge variant="outline" className="text-[10px] font-semibold text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
-                        ) : (
-                          <Badge className="text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
-                        )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {exp.isFixed ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-semibold cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50"
+                          onClick={() => toggleFixed(exp)}
+                        >
+                          Fixo
+                        </Badge>
+                      ) : (
+                        <Badge
+                          className="text-[10px] font-semibold cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
+                          onClick={() => toggleFixed(exp)}
+                        >
+                          Variável
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {renderDateEditor(exp)}
@@ -593,7 +614,7 @@ export function PeriodPanel({ expenses, year, month, onAddExpense }: PeriodPanel
             {/* Totals row */}
             {expenses.length > 0 && (
               <TableRow className="bg-red-50/80 dark:bg-red-950/20 font-bold border-t-2 border-red-200 dark:border-red-900">
-                <TableCell colSpan={2} className="text-base">Total</TableCell>
+                <TableCell colSpan={3} className="text-base">Total</TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPlanned)}
                 </TableCell>
