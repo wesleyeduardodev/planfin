@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         },
         include: {
           expenses: { include: { category: true } },
-          incomes: { orderBy: [{ period: "asc" }, { description: "asc" }] },
+          incomes: { orderBy: [{ period: "asc" }, { dueDate: "asc" }, { description: "asc" }] },
         },
       })
 
