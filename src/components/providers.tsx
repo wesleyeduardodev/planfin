@@ -2,10 +2,16 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SessionProvider } from "next-auth/react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Toaster } from "@/components/ui/sonner"
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+    }
+  }, [])
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
