@@ -3,12 +3,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 import {
   LayoutDashboard,
   CalendarRange,
   Tags,
   BarChart3,
   Settings,
+  LogOut,
   X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -125,6 +127,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             )
           })}
         </nav>
+
+        {/* Logout */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-sidebar-accent/30">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium w-full text-sidebar-foreground/60 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
+          >
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
+            Sair
+          </button>
+        </div>
       </aside>
     </>
   )
