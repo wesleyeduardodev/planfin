@@ -15,8 +15,8 @@ async function main() {
       hashedPassword,
       settings: {
         create: {
-          periodCount: 2,
-          periodDays: [1, 20],
+          periodCount: 1,
+          periodDays: [1],
         },
       },
     },

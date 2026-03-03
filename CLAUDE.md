@@ -86,7 +86,7 @@ src/
 
 ## Banco de Dados — Models Prisma
 - **User** — usuario (email unico, senha hash com bcryptjs)
-- **Settings** — periodCount (sem limite, default 2), periodDays Int[] (default [1,20])
+- **Settings** — periodCount (sem limite, default 1), periodDays Int[] (default [1])
 - **Category** — nome, cor hex, ordem (unique por user+nome)
 - **MonthlyPlan** — plano mensal (unique por user+ano+mes, cutDays Int[] define periodos)
 - **PlanExpense** — despesa do plano (plannedAmount, paidAmount; restante = planned - paid)

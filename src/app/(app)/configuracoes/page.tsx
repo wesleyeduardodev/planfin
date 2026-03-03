@@ -27,7 +27,7 @@ interface Profile {
 export default function ConfiguracoesPage() {
   const queryClient = useQueryClient()
   const { update: updateSession } = useSession()
-  const [periodDays, setPeriodDays] = useState<number[]>([1, 20])
+  const [periodDays, setPeriodDays] = useState<number[]>([1])
 
   // Profile state
   const [profileName, setProfileName] = useState("")

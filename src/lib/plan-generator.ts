@@ -76,7 +76,7 @@ export async function generateMonthlyPlan(
 
   // Get user settings
   const settings = await prisma.settings.findUnique({ where: { userId } })
-  const periodDays = settings?.periodDays ?? [1, 20]
+  const periodDays = settings?.periodDays ?? [1]
 
   const initialBalance = await calcInitialBalance(userId, year, month)
 

@@ -15,7 +15,7 @@ CREATE TABLE "settings" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "period_count" INTEGER NOT NULL DEFAULT 2,
-    "period_days" INTEGER[] DEFAULT ARRAY[1, 20]::INTEGER[],
+    "period_days" INTEGER[] DEFAULT ARRAY[1]::INTEGER[],
 
     CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
 );
@@ -37,7 +37,7 @@ CREATE TABLE "monthly_plans" (
     "user_id" TEXT NOT NULL,
     "year" INTEGER NOT NULL,
     "month" INTEGER NOT NULL,
-    "cut_days" INTEGER[] DEFAULT ARRAY[1, 20]::INTEGER[],
+    "cut_days" INTEGER[] DEFAULT ARRAY[1]::INTEGER[],
     "initial_balance" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'open',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

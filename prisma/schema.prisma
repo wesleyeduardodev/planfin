@@ -25,8 +25,8 @@ model User {
 model Settings {
   id          String @id @default(cuid())
   userId      String @unique @map("user_id")
-  periodCount Int    @default(2) @map("period_count")
-  periodDays  Int[]  @default([1, 20]) @map("period_days")
+  periodCount Int    @default(1) @map("period_count")
+  periodDays  Int[]  @default([1]) @map("period_days")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -52,7 +52,7 @@ model MonthlyPlan {
   userId         String   @map("user_id")
   year           Int
   month          Int
-  cutDays        Int[]    @default([1, 20]) @map("cut_days")
+  cutDays        Int[]    @default([1]) @map("cut_days")
   initialBalance Float    @default(0) @map("initial_balance")
   status         String   @default("open")
   createdAt      DateTime @default(now()) @map("created_at")
