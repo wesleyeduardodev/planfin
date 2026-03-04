@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
+import { nowBR } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,7 +35,8 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Email ou senha incorretos")
     } else {
-      router.push("/")
+      const { year, month } = nowBR()
+      router.push(`/planejamento/${year}/${month}`)
       router.refresh()
     }
   }
