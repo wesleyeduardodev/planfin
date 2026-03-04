@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useRef, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import {
   Plus,
   Trash2,
   X,
+  Pencil,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -180,6 +181,53 @@ export default function PlanejamentoPage({
     },
     onError: (error: Error) => toast.error(error.message),
   })
+
+  const [editingPeriod, setEditingPeriod] = useState<number | null>(null)
+  const [editCutDay, setEditCutDay] = useState(1)
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  const editPeriodMutation = useMutation({
+    mutationFn: async ({ period, newCutDay }: { period: number; newCutDay: number }) => {
+      if (!plan) return
+      const res = await fetch(`/api/plans/${plan.id}/periods`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period, newCutDay, daysInMonth }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erro ao editar período")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setEditingPeriod(null)
+      toast.success("Período atualizado")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  function startEditPeriod(period: number) {
+    if (!plan) return
+    setEditCutDay(plan.cutDays[period - 1])
+    setEditingPeriod(period)
+  }
+
+  function getEditMinMax(period: number): { min: number; max: number } {
+    if (!plan) return { min: 1, max: daysInMonth }
+    const cutDays = plan.cutDays
+    const min = period === 1 ? 1 : cutDays[period - 2] + 1
+    const max = period < cutDays.length ? cutDays[period] - 1 : daysInMonth
+    return { min, max }
+  }
+
+  useEffect(() => {
+    if (editingPeriod !== null) {
+      editInputRef.current?.focus()
+      editInputRef.current?.select()
+    }
+  }, [editingPeriod])
 
   function openAddPeriod() {
     // Sugerir dia default: ponto médio do maior intervalo
@@ -363,8 +411,53 @@ export default function PlanejamentoPage({
             {periodData.map((pd, i) => (
               <div key={pd.period} className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold">{pd.label}</h2>
-                  {pd.period > 1 && periodCount > 1 && (
+                  {editingPeriod === pd.period ? (() => {
+                    const { min, max } = getEditMinMax(pd.period)
+                    return (
+                      <form
+                        className="flex items-center gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          editPeriodMutation.mutate({ period: pd.period, newCutDay: editCutDay })
+                        }}
+                      >
+                        <span className="text-lg font-semibold">Período {pd.period} — dia</span>
+                        <Input
+                          ref={editInputRef}
+                          type="number"
+                          min={min}
+                          max={max}
+                          value={editCutDay}
+                          onChange={(e) => setEditCutDay(parseInt(e.target.value) || min)}
+                          className="w-16 h-8 text-center"
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setEditingPeriod(null)
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">({min}–{max})</span>
+                        <Button type="submit" size="sm" variant="outline" className="h-8" disabled={editPeriodMutation.isPending}>
+                          OK
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setEditingPeriod(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </form>
+                    )
+                  })() : (
+                    <>
+                      <h2 className="text-lg font-semibold">{pd.label}</h2>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                        onClick={() => startEditPeriod(pd.period)}
+                        title="Editar dia de início"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                  {editingPeriod !== pd.period && pd.period > 1 && periodCount > 1 && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -422,18 +515,63 @@ export default function PlanejamentoPage({
 
               {periodData.map((pd, i) => (
                 <TabsContent key={pd.period} value={`p${pd.period}`} className="space-y-4 mt-4">
-                  {pd.period > 1 && periodCount > 1 && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeletePeriod(pd.period)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {editingPeriod === pd.period ? (() => {
+                      const { min, max } = getEditMinMax(pd.period)
+                      return (
+                        <form
+                          className="flex items-center gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault()
+                            editPeriodMutation.mutate({ period: pd.period, newCutDay: editCutDay })
+                          }}
+                        >
+                          <span className="text-sm font-semibold">Dia início:</span>
+                          <Input
+                            type="number"
+                            min={min}
+                            max={max}
+                            value={editCutDay}
+                            onChange={(e) => setEditCutDay(parseInt(e.target.value) || min)}
+                            className="w-16 h-8 text-center"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") setEditingPeriod(null)
+                            }}
+                          />
+                          <span className="text-xs text-muted-foreground">({min}–{max})</span>
+                          <Button type="submit" size="sm" variant="outline" className="h-8" disabled={editPeriodMutation.isPending}>
+                            OK
+                          </Button>
+                          <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setEditingPeriod(null)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </form>
+                      )
+                    })() : (
+                      <>
+                        <span className="text-sm font-medium text-muted-foreground">{pd.label}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                          onClick={() => startEditPeriod(pd.period)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        {pd.period > 1 && periodCount > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletePeriod(pd.period)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
                   <IncomeSection
                     planId={plan.id}
                     incomes={pd.incomes}
