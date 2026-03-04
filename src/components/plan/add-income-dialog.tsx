@@ -37,6 +37,7 @@ export function AddIncomeDialog({
     expectedAmount: 0,
     dueDate: "",
     isFixed: true,
+    alreadyReceived: false,
   })
 
   const mutation = useMutation({
@@ -49,6 +50,7 @@ export function AddIncomeDialog({
           period,
           description: form.description,
           expectedAmount: form.expectedAmount,
+          receivedAmount: form.alreadyReceived ? form.expectedAmount : 0,
           dueDate: form.dueDate || null,
           isFixed: form.isFixed,
         }),
@@ -59,7 +61,7 @@ export function AddIncomeDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", expectedAmount: 0, dueDate: "", isFixed: true })
+      setForm({ description: "", expectedAmount: 0, dueDate: "", isFixed: true, alreadyReceived: false })
       toast.success("Receita adicionada")
     },
     onError: () => toast.error("Erro ao adicionar receita"),
@@ -104,15 +106,26 @@ export function AddIncomeDialog({
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isFixed}
-              onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
-              className="h-4 w-4 rounded border-border"
-            />
-            <span className="text-sm">Entrada fixa</span>
-          </label>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isFixed}
+                onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm">Entrada fixa</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.alreadyReceived}
+                onChange={(e) => setForm({ ...form, alreadyReceived: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm">Já recebido</span>
+            </label>
+          </div>
           <div className="flex justify-end gap-2">
             <Button
               type="button"

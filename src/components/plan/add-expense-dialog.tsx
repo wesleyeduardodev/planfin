@@ -51,6 +51,7 @@ export function AddExpenseDialog({
     dueDate: "",
     categoryId: "",
     isFixed: true,
+    alreadyPaid: false,
   })
 
   const { data: categories = [] } = useQuery<Category[]>({
@@ -68,6 +69,7 @@ export function AddExpenseDialog({
           period,
           description: form.description,
           plannedAmount: form.plannedAmount,
+          paidAmount: form.alreadyPaid ? form.plannedAmount : 0,
           dueDate: form.dueDate || null,
           categoryId: form.categoryId || null,
           isFixed: form.isFixed,
@@ -79,7 +81,7 @@ export function AddExpenseDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", plannedAmount: 0, dueDate: "", categoryId: "", isFixed: true })
+      setForm({ description: "", plannedAmount: 0, dueDate: "", categoryId: "", isFixed: true, alreadyPaid: false })
       toast.success("Despesa adicionada")
     },
     onError: () => toast.error("Erro ao adicionar despesa"),
@@ -149,15 +151,26 @@ export function AddExpenseDialog({
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isFixed}
-              onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
-              className="h-4 w-4 rounded border-border"
-            />
-            <span className="text-sm">Despesa fixa</span>
-          </label>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isFixed}
+                onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm">Despesa fixa</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.alreadyPaid}
+                onChange={(e) => setForm({ ...form, alreadyPaid: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm">Já pago</span>
+            </label>
+          </div>
           <div className="flex justify-end gap-2">
             <Button
               type="button"
