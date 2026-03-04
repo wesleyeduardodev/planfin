@@ -240,10 +240,11 @@ export default function DashboardPage() {
           {/* Period comparison */}
           {activePlan.periods.length > 0 && (
             <div
-              className="grid grid-cols-1 gap-4"
-              style={{
-                gridTemplateColumns: `repeat(${Math.min(activePlan.periods.length, 3)}, minmax(0, 1fr))`,
-              }}
+              className={cn(
+                "grid grid-cols-1 gap-4",
+                activePlan.periods.length >= 2 && "sm:grid-cols-2",
+                activePlan.periods.length >= 3 && "lg:grid-cols-3",
+              )}
             >
               {activePlan.periods.map((pd) => (
                 <Card key={pd.period}>
