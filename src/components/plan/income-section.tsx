@@ -367,7 +367,12 @@ export function IncomeSection({
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (
-                  <div key={inc.id} className={cn("rounded-lg border p-3 space-y-2", isReceived && "opacity-60")}>
+                  <div key={inc.id} className={cn(
+                    "rounded-lg border p-3 space-y-2",
+                    isReceived
+                      ? "opacity-60"
+                      : "border-l-3 border-l-amber-400 bg-amber-50/40 dark:bg-amber-950/10"
+                  )}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {editingId === inc.id && editField === "description" ? (
@@ -476,8 +481,10 @@ export function IncomeSection({
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (
-                  <TableRow key={inc.id}>
-                    <TableCell className="text-sm">
+                  <TableRow key={inc.id} className={cn(
+                    isReceived ? "opacity-60" : "bg-amber-50/30 dark:bg-amber-950/10"
+                  )}>
+                    <TableCell className={cn("text-sm", !isReceived && "border-l-3 border-l-amber-400")}>
                       {editingId === inc.id && editField === "description" ? (
                         <input
                           className="text-sm border rounded px-1 py-0.5 bg-background w-full min-w-0"

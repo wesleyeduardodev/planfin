@@ -427,7 +427,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                   key={exp.id}
                   className={cn(
                     "rounded-lg border bg-card p-3 space-y-2",
-                    isPaid && "opacity-60"
+                    isPaid
+                      ? "opacity-60"
+                      : "border-l-3 border-l-red-400 bg-red-50/40 dark:bg-red-950/10"
                   )}
                 >
                   {/* Row 1: category dot + description + actions */}
@@ -598,9 +600,11 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                 return (
                   <TableRow
                     key={exp.id}
-                    className={cn(isPaid && "bg-muted/30")}
+                    className={cn(
+                      isPaid ? "bg-muted/30 opacity-60" : "bg-red-50/30 dark:bg-red-950/10"
+                    )}
                   >
-                    <TableCell>
+                    <TableCell className={cn(!isPaid && "border-l-3 border-l-red-400")}>
                       <div className="flex items-center gap-2 relative">
                         {renderCategoryDropdown(exp)}
                         {editingId === exp.id && editField === "description" ? (
