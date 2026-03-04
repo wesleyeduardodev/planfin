@@ -100,7 +100,38 @@ export default function CategoriasPage() {
         }
       />
 
-      <div className="rounded-lg border bg-card">
+      {/* ========== MOBILE: Card list ========== */}
+      <div className="sm:hidden space-y-2">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Nenhuma categoria cadastrada</div>
+        ) : (
+          categories.map((cat) => (
+            <div key={cat.id} className="rounded-lg border bg-card p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-5 h-5 rounded-full border shrink-0"
+                  style={{ backgroundColor: cat.color }}
+                />
+                <span className="text-sm font-medium break-words">{cat.name}</span>
+                <span className="text-xs text-muted-foreground shrink-0">#{cat.order}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(cat)} aria-label="Editar categoria">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(cat.id)} aria-label="Excluir categoria">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ========== DESKTOP: Table ========== */}
+      <div className="hidden sm:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -136,18 +167,10 @@ export default function CategoriasPage() {
                   <TableCell>{cat.order}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(cat)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(cat)} aria-label="Editar categoria">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(cat.id)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(cat.id)} aria-label="Excluir categoria">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

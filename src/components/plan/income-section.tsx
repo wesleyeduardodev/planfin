@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { SwipeableCard } from "@/components/shared/swipeable-card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -367,78 +368,94 @@ export function IncomeSection({
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (
-                  <div key={inc.id} className={cn(
-                    "rounded-lg border p-3 space-y-2",
+                  <SwipeableCard
+                    key={inc.id}
+                    onSwipeRight={() => receiveFull(inc)}
+                    onSwipeLeft={() => setDeleteId(inc.id)}
+                    rightLabel="Recebido"
+                    leftLabel="Excluir"
+                    disableRight={isReceived}
+                  >
+                  <div className={cn(
+                    "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isReceived
                       ? "opacity-60"
                       : "border-l-3 border-l-amber-400 bg-amber-50/40 dark:bg-amber-950/10"
                   )}>
+                    {/* Row 1: description */}
+                    <div className="min-w-0">
+                      {editingId === inc.id && editField === "description" ? (
+                        <input
+                          className="text-sm font-medium border rounded px-1 py-0.5 bg-background w-full min-w-0"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => commitEdit(inc.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(inc.id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          className="text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-all"
+                          onClick={() => startEdit(inc, "description")}
+                        >
+                          {inc.description}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Row 2: badge + date + actions */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        {editingId === inc.id && editField === "description" ? (
-                          <input
-                            className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => commitEdit(inc.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") commitEdit(inc.id)
-                              if (e.key === "Escape") setEditingId(null)
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          <button
-                            className="text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-words"
-                            onClick={() => startEdit(inc, "description")}
-                          >
-                            {inc.description}
-                          </button>
-                        )}
+                      <div className="flex items-center gap-2">
                         {renderTypeBadge(inc)}
-                        <span className="text-[10px] text-muted-foreground shrink-0">
+                        <span className="text-xs text-muted-foreground">
                           {inc.dueDate ? formatDate(inc.dueDate) : ""}
                         </span>
                       </div>
-                      <div className="flex items-center gap-0.5 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         {periodCount > 1 && period > 1 && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, -1)} title="Mover para período anterior">
-                            <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(inc, -1)} aria-label="Mover para período anterior">
+                            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )}
                         {periodCount > 1 && period < periodCount && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, 1)} title="Mover para próximo período">
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(inc, 1)} aria-label="Mover para próximo período">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )}
                         {!isReceived ? (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => receiveFull(inc)} title="Marcar como recebido">
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => receiveFull(inc)} aria-label="Marcar como recebido">
+                            <Check className="h-4 w-4 text-emerald-600" />
                           </Button>
                         ) : (
                           <>
                             <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50">OK</Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => unreceive(inc)} title="Desmarcar recebido">
-                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => unreceive(inc)} aria-label="Desmarcar recebido">
+                              <X className="h-4 w-4 text-muted-foreground" />
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(inc.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(inc.id)} aria-label="Remover receita">
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-end gap-3 text-xs">
-                      <div className="text-right">
-                        <span className="text-muted-foreground text-[10px] block">Esperado</span>
+
+                    {/* Row 3: values */}
+                    <div className="flex items-center justify-between gap-3 pt-1 border-t">
+                      <div className="text-left">
+                        <span className="text-muted-foreground text-xs block">Esperado</span>
                         {renderCurrencyEditor(inc, "expected")}
                       </div>
                       <div className="text-right">
-                        <span className="text-muted-foreground text-[10px] block">Recebido</span>
+                        <span className="text-muted-foreground text-xs block">Recebido</span>
                         {renderCurrencyEditor(inc, "received")}
                       </div>
                     </div>
                   </div>
+                  </SwipeableCard>
                 )
               })}
               <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3 flex items-center justify-between text-sm font-semibold">

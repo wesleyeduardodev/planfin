@@ -14,7 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { SwipeableCard } from "@/components/shared/swipeable-card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -250,43 +257,48 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const totalPaid = expenses.reduce((s, e) => s + e.paidAmount, 0)
   const totalRemaining = totalPlanned - totalPaid
 
-  // Shared: category dropdown
+  // Category selection list (shared between dropdown and sheet)
+  function renderCategoryList(exp: PlanExpense) {
+    return categories.map((cat) => (
+      <button
+        key={cat.id}
+        className={cn(
+          "flex items-center gap-3 w-full px-3 py-2.5 text-sm hover:bg-accent text-left rounded-md",
+          exp.categoryId === cat.id && "bg-accent"
+        )}
+        onClick={() => {
+          updateMutation.mutate({
+            id: exp.id,
+            data: { categoryId: cat.id },
+          })
+          setCategoryEditId(null)
+        }}
+      >
+        <div
+          className="w-3 h-3 rounded-full shrink-0"
+          style={{ backgroundColor: cat.color }}
+        />
+        {cat.name}
+      </button>
+    ))
+  }
+
+  // Desktop: dropdown popup
   function renderCategoryDropdown(exp: PlanExpense) {
     return (
       <>
         <button
-          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow"
+          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow p-2 -m-2 bg-clip-content"
           style={{ backgroundColor: exp.category?.color ?? "#d1d5db" }}
           onClick={() => setCategoryEditId(categoryEditId === exp.id ? null : exp.id)}
-          title="Mudar categoria"
+          aria-label="Mudar categoria"
         />
         {categoryEditId === exp.id && (
           <div
             ref={categoryRef}
-            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px]"
+            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px] hidden sm:block"
           >
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                className={cn(
-                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent text-left",
-                  exp.categoryId === cat.id && "bg-accent"
-                )}
-                onClick={() => {
-                  updateMutation.mutate({
-                    id: exp.id,
-                    data: { categoryId: cat.id },
-                  })
-                  setCategoryEditId(null)
-                }}
-              >
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
-                {cat.name}
-              </button>
-            ))}
+            {renderCategoryList(exp)}
           </div>
         )}
       </>
@@ -423,126 +435,107 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
               const isPaid = remaining <= 0
 
               return (
-                <div
+                <SwipeableCard
                   key={exp.id}
+                  onSwipeRight={() => payFull(exp)}
+                  onSwipeLeft={() => setDeleteId(exp.id)}
+                  rightLabel="Pago"
+                  leftLabel="Excluir"
+                  disableRight={isPaid}
+                >
+                <div
                   className={cn(
-                    "rounded-lg border bg-card p-3 space-y-2",
+                    "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isPaid
                       ? "opacity-60"
                       : "border-l-3 border-l-red-400 bg-red-50/40 dark:bg-red-950/10"
                   )}
                 >
-                  {/* Row 1: category dot + description + actions */}
+                  {/* Row 1: category dot + description */}
+                  <div className="flex items-start gap-2 relative min-w-0">
+                    {renderCategoryDropdown(exp)}
+                    {editingId === exp.id && editField === "description" ? (
+                      <input
+                        className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => commitEdit(exp.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit(exp.id)
+                          if (e.key === "Escape") setEditingId(null)
+                        }}
+                        autoFocus
+                      />
+                    ) : (
+                      <button
+                        className={cn("text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-all", isPaid && "line-through text-muted-foreground")}
+                        onClick={() => startEdit(exp, "description")}
+                      >
+                        {exp.description}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Row 2: badge + date + actions */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 relative min-w-0 flex-1">
-                      {renderCategoryDropdown(exp)}
-                      {editingId === exp.id && editField === "description" ? (
-                        <input
-                          className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => commitEdit(exp.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(exp.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          className={cn("text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-words", isPaid && "line-through text-muted-foreground")}
-                          onClick={() => startEdit(exp, "description")}
-                        >
-                          {exp.description}
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2">
                       {exp.isFixed ? (
                         <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
                       ) : (
                         <Badge className="text-[10px] font-semibold shrink-0 bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
                       )}
+                      <span className="text-xs text-muted-foreground">
+                        {renderDateEditor(exp)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {periodCount > 1 && period > 1 && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, -1)} title="Mover para período anterior">
-                          <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(exp, -1)} aria-label="Mover para período anterior">
+                          <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       )}
                       {periodCount > 1 && period < periodCount && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, 1)} title="Mover para próximo período">
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(exp, 1)} aria-label="Mover para próximo período">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       )}
-                      {!isPaid && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => payFull(exp)}
-                          title="Marcar como pago"
-                        >
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      {!isPaid ? (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => payFull(exp)} aria-label="Marcar como pago">
+                          <Check className="h-4 w-4 text-emerald-600" />
                         </Button>
-                      )}
-                      {isPaid && (
+                      ) : (
                         <>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
-                          >
-                            Pago
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => unpay(exp)}
-                            title="Desmarcar pago"
-                          >
-                            <X className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50">Pago</Badge>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => unpay(exp)} aria-label="Desmarcar pago">
+                            <X className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setDeleteId(exp.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(exp.id)} aria-label="Remover despesa">
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </div>
 
-                  {/* Row 2: date + values */}
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="text-muted-foreground">
-                      {renderDateEditor(exp)}
+                  {/* Row 3: values */}
+                  <div className="flex items-center justify-between gap-3 pt-1 border-t">
+                    <div className="text-left">
+                      <span className="text-muted-foreground text-xs block">Valor</span>
+                      {renderCurrencyEditor(exp, "planned")}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <span className="text-muted-foreground text-[10px] block">Valor</span>
-                        {renderCurrencyEditor(exp, "planned")}
-                      </div>
-                      <div className="text-right">
-                        <span className="text-muted-foreground text-[10px] block">Pago</span>
-                        {renderCurrencyEditor(exp, "paid")}
-                      </div>
+                    <div className="text-center">
+                      <span className="text-muted-foreground text-xs block">Pago</span>
+                      {renderCurrencyEditor(exp, "paid")}
                     </div>
-                  </div>
-
-                  {/* Row 3: remaining (if not paid) */}
-                  {!isPaid && (
-                    <div className="flex justify-end">
-                      <span className={cn(
-                        "font-mono text-xs",
-                        remaining > 0 ? "text-amber-600" : "text-emerald-600"
-                      )}>
-                        Restante: {formatCurrency(remaining)}
+                    <div className="text-right">
+                      <span className={cn("text-xs block", remaining > 0 ? "text-amber-600" : "text-emerald-600")}>Restante</span>
+                      <span className={cn("font-mono text-sm", remaining > 0 ? "text-amber-600" : "text-emerald-600")}>
+                        {formatCurrency(remaining)}
                       </span>
                     </div>
-                  )}
+                  </div>
                 </div>
+                </SwipeableCard>
               )
             })}
 
@@ -743,6 +736,20 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile: Sheet for category selection */}
+      <Sheet open={!!categoryEditId} onOpenChange={() => setCategoryEditId(null)}>
+        <SheetContent side="bottom" className="sm:hidden">
+          <SheetHeader>
+            <SheetTitle>Selecionar Categoria</SheetTitle>
+          </SheetHeader>
+          <div className="py-2 space-y-1">
+            {categoryEditId && renderCategoryList(
+              expenses.find((e) => e.id === categoryEditId) ?? expenses[0]
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ConfirmDialog
         open={!!deleteId}
