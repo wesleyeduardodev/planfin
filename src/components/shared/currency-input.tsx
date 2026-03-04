@@ -1,7 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { useState, useEffect } from "react"
+import { useRef, useEffect } from "react"
 
 interface CurrencyInputProps {
   value: number
@@ -11,6 +11,13 @@ interface CurrencyInputProps {
   disabled?: boolean
 }
 
+function formatCents(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 export function CurrencyInput({
   value,
   onChange,
@@ -18,38 +25,27 @@ export function CurrencyInput({
   placeholder = "0,00",
   disabled,
 }: CurrencyInputProps) {
-  const [display, setDisplay] = useState("")
+  const centsRef = useRef(Math.round(value * 100))
 
   useEffect(() => {
-    if (value !== undefined && value !== null) {
-      setDisplay(
-        value.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      )
-    }
+    centsRef.current = Math.round(value * 100)
   }, [value])
 
+  const display = formatCents(centsRef.current)
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^\d,]/g, "")
-    setDisplay(raw)
+    const digits = e.target.value.replace(/\D/g, "")
+    const cents = parseInt(digits, 10) || 0
+    centsRef.current = cents
+    onChange(cents / 100)
   }
 
-  function handleBlur() {
-    const cleaned = display.replace(/\./g, "").replace(",", ".")
-    const parsed = parseFloat(cleaned)
-    if (!isNaN(parsed)) {
-      onChange(parsed)
-      setDisplay(
-        parsed.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      )
-    } else {
-      onChange(0)
-      setDisplay("0,00")
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace") {
+      e.preventDefault()
+      const cents = Math.floor(centsRef.current / 10)
+      centsRef.current = cents
+      onChange(cents / 100)
     }
   }
 
@@ -59,9 +55,10 @@ export function CurrencyInput({
         R$
       </span>
       <Input
+        inputMode="numeric"
         value={display}
         onChange={handleChange}
-        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         className={`pl-9 ${className || ""}`}
         placeholder={placeholder}
         disabled={disabled}
