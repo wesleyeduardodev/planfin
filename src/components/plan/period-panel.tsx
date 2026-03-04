@@ -21,7 +21,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { SwipeableCard } from "@/components/shared/swipeable-card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -59,6 +58,8 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"planned" | "paid" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanExpense | null>(null)
+  const [movePeriodTarget, setMovePeriodTarget] = useState<{ expense: PlanExpense; direction: -1 | 1 } | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
 
@@ -132,20 +133,25 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
     }
   }, [categoryEditId])
 
-  function toggleFixed(expense: PlanExpense) {
+  function confirmToggleFixed() {
+    if (!toggleFixedTarget) return
     updateMutation.mutate({
-      id: expense.id,
-      data: { isFixed: !expense.isFixed },
+      id: toggleFixedTarget.id,
+      data: { isFixed: !toggleFixedTarget.isFixed },
     })
+    setToggleFixedTarget(null)
   }
 
-  function movePeriod(expense: PlanExpense, direction: -1 | 1) {
+  function confirmMovePeriod() {
+    if (!movePeriodTarget) return
+    const { expense, direction } = movePeriodTarget
     const newPeriod = expense.period + direction
     if (newPeriod < 1 || newPeriod > periodCount) return
     updateMutation.mutate({
       id: expense.id,
       data: { period: newPeriod },
     })
+    setMovePeriodTarget(null)
   }
 
   const updateMutation = useMutation({
@@ -435,15 +441,8 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
               const isPaid = remaining <= 0
 
               return (
-                <SwipeableCard
-                  key={exp.id}
-                  onSwipeRight={() => payFull(exp)}
-                  onSwipeLeft={() => setDeleteId(exp.id)}
-                  rightLabel="Pago"
-                  leftLabel="Excluir"
-                  disableRight={isPaid}
-                >
                 <div
+                  key={exp.id}
                   className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isPaid
@@ -480,9 +479,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {exp.isFixed ? (
-                        <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50">Fixo</Badge>
+                        <Badge variant="outline" className="text-[10px] font-semibold shrink-0 cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50" onClick={() => setToggleFixedTarget(exp)}>Fixo</Badge>
                       ) : (
-                        <Badge className="text-[10px] font-semibold shrink-0 bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">Variável</Badge>
+                        <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
                         {renderDateEditor(exp)}
@@ -490,12 +489,12 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {periodCount > 1 && period > 1 && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(exp, -1)} aria-label="Mover para período anterior">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ expense: exp, direction: -1 })} aria-label="Mover para período anterior">
                           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       )}
                       {periodCount > 1 && period < periodCount && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(exp, 1)} aria-label="Mover para próximo período">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ expense: exp, direction: 1 })} aria-label="Mover para próximo período">
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       )}
@@ -535,7 +534,6 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                     </div>
                   </div>
                 </div>
-                </SwipeableCard>
               )
             })}
 
@@ -627,14 +625,14 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                         <Badge
                           variant="outline"
                           className="text-[10px] font-semibold cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50"
-                          onClick={() => toggleFixed(exp)}
+                          onClick={() => setToggleFixedTarget(exp)}
                         >
                           Fixo
                         </Badge>
                       ) : (
                         <Badge
                           className="text-[10px] font-semibold cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
-                          onClick={() => toggleFixed(exp)}
+                          onClick={() => setToggleFixedTarget(exp)}
                         >
                           Variável
                         </Badge>
@@ -664,12 +662,12 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
                         {periodCount > 1 && period > 1 && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, -1)} title="Mover para período anterior">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMovePeriodTarget({ expense: exp, direction: -1 })} title="Mover para período anterior">
                             <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         )}
                         {periodCount > 1 && period < periodCount && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(exp, 1)} title="Mover para próximo período">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMovePeriodTarget({ expense: exp, direction: 1 })} title="Mover para próximo período">
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         )}
@@ -758,6 +756,28 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
         description="Remover esta despesa do plano?"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         loading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!toggleFixedTarget}
+        onOpenChange={() => setToggleFixedTarget(null)}
+        title="Alterar Tipo"
+        description={toggleFixedTarget ? `Alterar "${toggleFixedTarget.description}" de ${toggleFixedTarget.isFixed ? "Fixo" : "Variável"} para ${toggleFixedTarget.isFixed ? "Variável" : "Fixo"}?` : ""}
+        onConfirm={confirmToggleFixed}
+        confirmLabel="Confirmar"
+        loadingLabel="Alterando..."
+        confirmVariant="default"
+      />
+
+      <ConfirmDialog
+        open={!!movePeriodTarget}
+        onOpenChange={() => setMovePeriodTarget(null)}
+        title="Mover Período"
+        description={movePeriodTarget ? `Mover "${movePeriodTarget.expense.description}" para o período ${movePeriodTarget.expense.period + movePeriodTarget.direction}?` : ""}
+        onConfirm={confirmMovePeriod}
+        confirmLabel="Mover"
+        loadingLabel="Movendo..."
+        confirmVariant="default"
       />
     </>
   )

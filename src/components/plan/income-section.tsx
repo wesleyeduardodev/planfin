@@ -15,7 +15,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { SwipeableCard } from "@/components/shared/swipeable-card"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -52,6 +51,8 @@ export function IncomeSection({
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"expected" | "received" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanIncome | null>(null)
+  const [movePeriodTarget, setMovePeriodTarget] = useState<{ income: PlanIncome; direction: -1 | 1 } | null>(null)
 
   type SortKey = "description" | "type" | "date" | "expected" | "received"
   type SortDir = "asc" | "desc"
@@ -191,20 +192,25 @@ export function IncomeSection({
     updateMutation.mutate({ id, data })
   }
 
-  function toggleFixed(income: PlanIncome) {
+  function confirmToggleFixed() {
+    if (!toggleFixedTarget) return
     updateMutation.mutate({
-      id: income.id,
-      data: { isFixed: !income.isFixed },
+      id: toggleFixedTarget.id,
+      data: { isFixed: !toggleFixedTarget.isFixed },
     })
+    setToggleFixedTarget(null)
   }
 
-  function movePeriod(income: PlanIncome, direction: -1 | 1) {
+  function confirmMovePeriod() {
+    if (!movePeriodTarget) return
+    const { income, direction } = movePeriodTarget
     const newPeriod = income.period + direction
     if (newPeriod < 1 || newPeriod > periodCount) return
     updateMutation.mutate({
       id: income.id,
       data: { period: newPeriod },
     })
+    setMovePeriodTarget(null)
   }
 
   function receiveFull(income: PlanIncome) {
@@ -290,14 +296,14 @@ export function IncomeSection({
       <Badge
         variant="outline"
         className="text-[10px] font-semibold cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50"
-        onClick={() => toggleFixed(inc)}
+        onClick={() => setToggleFixedTarget(inc)}
       >
         Fixo
       </Badge>
     ) : (
       <Badge
         className="text-[10px] font-semibold cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"
-        onClick={() => toggleFixed(inc)}
+        onClick={() => setToggleFixedTarget(inc)}
       >
         Variável
       </Badge>
@@ -368,15 +374,9 @@ export function IncomeSection({
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (
-                  <SwipeableCard
+                  <div
                     key={inc.id}
-                    onSwipeRight={() => receiveFull(inc)}
-                    onSwipeLeft={() => setDeleteId(inc.id)}
-                    rightLabel="Recebido"
-                    leftLabel="Excluir"
-                    disableRight={isReceived}
-                  >
-                  <div className={cn(
+                    className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isReceived
                       ? "opacity-60"
@@ -411,17 +411,17 @@ export function IncomeSection({
                       <div className="flex items-center gap-2">
                         {renderTypeBadge(inc)}
                         <span className="text-xs text-muted-foreground">
-                          {inc.dueDate ? formatDate(inc.dueDate) : ""}
+                          {renderDateEditor(inc)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {periodCount > 1 && period > 1 && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(inc, -1)} aria-label="Mover para período anterior">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ income: inc, direction: -1 })} aria-label="Mover para período anterior">
                             <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )}
                         {periodCount > 1 && period < periodCount && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePeriod(inc, 1)} aria-label="Mover para próximo período">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ income: inc, direction: 1 })} aria-label="Mover para próximo período">
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )}
@@ -455,7 +455,6 @@ export function IncomeSection({
                       </div>
                     </div>
                   </div>
-                  </SwipeableCard>
                 )
               })}
               <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3 flex items-center justify-between text-sm font-semibold">
@@ -538,12 +537,12 @@ export function IncomeSection({
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
                         {periodCount > 1 && period > 1 && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, -1)} title="Mover para período anterior">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMovePeriodTarget({ income: inc, direction: -1 })} title="Mover para período anterior">
                             <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         )}
                         {periodCount > 1 && period < periodCount && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => movePeriod(inc, 1)} title="Mover para próximo período">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMovePeriodTarget({ income: inc, direction: 1 })} title="Mover para próximo período">
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         )}
@@ -613,6 +612,28 @@ export function IncomeSection({
         description="Remover esta receita do plano?"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         loading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!toggleFixedTarget}
+        onOpenChange={() => setToggleFixedTarget(null)}
+        title="Alterar Tipo"
+        description={toggleFixedTarget ? `Alterar "${toggleFixedTarget.description}" de ${toggleFixedTarget.isFixed ? "Fixo" : "Variável"} para ${toggleFixedTarget.isFixed ? "Variável" : "Fixo"}?` : ""}
+        onConfirm={confirmToggleFixed}
+        confirmLabel="Confirmar"
+        loadingLabel="Alterando..."
+        confirmVariant="default"
+      />
+
+      <ConfirmDialog
+        open={!!movePeriodTarget}
+        onOpenChange={() => setMovePeriodTarget(null)}
+        title="Mover Período"
+        description={movePeriodTarget ? `Mover "${movePeriodTarget.income.description}" para o período ${movePeriodTarget.income.period + movePeriodTarget.direction}?` : ""}
+        onConfirm={confirmMovePeriod}
+        confirmLabel="Mover"
+        loadingLabel="Movendo..."
+        confirmVariant="default"
       />
     </>
   )
