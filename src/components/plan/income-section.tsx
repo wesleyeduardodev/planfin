@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -51,6 +51,52 @@ export function IncomeSection({
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"expected" | "received" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  type SortKey = "description" | "type" | "date" | "expected" | "received"
+  type SortDir = "asc" | "desc"
+  const [sortKey, setSortKey] = useState<SortKey | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    } else {
+      setSortKey(key)
+      setSortDir("asc")
+    }
+  }
+
+  const sortedIncomes = useMemo(() => {
+    if (!sortKey) return incomes
+    return [...incomes].sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case "description":
+          cmp = a.description.localeCompare(b.description, "pt-BR")
+          break
+        case "type":
+          cmp = (a.isFixed ? 0 : 1) - (b.isFixed ? 0 : 1)
+          break
+        case "date":
+          cmp = (a.dueDate ?? "").localeCompare(b.dueDate ?? "")
+          break
+        case "expected":
+          cmp = a.expectedAmount - b.expectedAmount
+          break
+        case "received":
+          cmp = a.receivedAmount - b.receivedAmount
+          break
+      }
+      return sortDir === "asc" ? cmp : -cmp
+    })
+  }, [incomes, sortKey, sortDir])
+
+  function SortIcon({ column }: { column: SortKey }) {
+    if (sortKey !== column) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+    return sortDir === "asc"
+      ? <ArrowUp className="h-3 w-3 text-foreground" />
+      : <ArrowDown className="h-3 w-3 text-foreground" />
+  }
 
   const updateMutation = useMutation({
     mutationFn: async ({
@@ -260,6 +306,34 @@ export function IncomeSection({
   const totalExpected = incomes.reduce((s, i) => s + i.expectedAmount, 0)
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
 
+  const sortLabels: Record<SortKey, string> = {
+    description: "Descrição",
+    type: "Tipo",
+    date: "Data",
+    expected: "Esperado",
+    received: "Recebido",
+  }
+
+  const sortBar = (
+    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto">
+      {(Object.keys(sortLabels) as SortKey[]).map((key) => (
+        <button
+          key={key}
+          className={cn(
+            "flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border whitespace-nowrap cursor-pointer",
+            sortKey === key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "text-muted-foreground hover:bg-muted border-transparent"
+          )}
+          onClick={() => toggleSort(key)}
+        >
+          {sortLabels[key]}
+          {sortKey === key && (sortDir === "asc" ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />)}
+        </button>
+      ))}
+    </div>
+  )
+
   const headerBar = (
     <div className="px-4 py-2.5 border-b flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/30 rounded-t-lg">
       <h4 className="text-sm font-bold tracking-wide uppercase text-emerald-600 dark:text-emerald-400">
@@ -281,6 +355,7 @@ export function IncomeSection({
       {/* ========== MOBILE: Card list ========== */}
       <div className="sm:hidden rounded-lg border bg-card overflow-hidden">
         {headerBar}
+        {incomes.length > 1 && sortBar}
         <div className="p-2 space-y-2">
           {incomes.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
@@ -288,7 +363,7 @@ export function IncomeSection({
             </div>
           ) : (
             <>
-              {incomes.map((inc) => {
+              {sortedIncomes.map((inc) => {
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (
@@ -309,7 +384,7 @@ export function IncomeSection({
                           />
                         ) : (
                           <button
-                            className="text-sm font-medium truncate text-left hover:bg-muted px-1 rounded cursor-pointer"
+                            className="text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-words"
                             onClick={() => startEdit(inc, "description")}
                           >
                             {inc.description}
@@ -381,11 +456,11 @@ export function IncomeSection({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead className="w-20">Tipo</TableHead>
-              <TableHead className="w-32">Data</TableHead>
-              <TableHead className="text-right w-28">Esperado</TableHead>
-              <TableHead className="text-right w-28">Recebido</TableHead>
+              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon column="description" /></button></TableHead>
+              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
+              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("expected")}>Esperado <SortIcon column="expected" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("received")}>Recebido <SortIcon column="received" /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -397,7 +472,7 @@ export function IncomeSection({
                 </TableCell>
               </TableRow>
             ) : (
-              incomes.map((inc) => {
+              sortedIncomes.map((inc) => {
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
 
                 return (

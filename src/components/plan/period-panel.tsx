@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -54,6 +54,55 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
+
+  type SortKey = "description" | "type" | "date" | "planned" | "paid" | "remaining"
+  type SortDir = "asc" | "desc"
+  const [sortKey, setSortKey] = useState<SortKey | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    } else {
+      setSortKey(key)
+      setSortDir("asc")
+    }
+  }
+
+  const sortedExpenses = useMemo(() => {
+    if (!sortKey) return expenses
+    return [...expenses].sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case "description":
+          cmp = a.description.localeCompare(b.description, "pt-BR")
+          break
+        case "type":
+          cmp = (a.isFixed ? 0 : 1) - (b.isFixed ? 0 : 1)
+          break
+        case "date":
+          cmp = (a.dueDate ?? "").localeCompare(b.dueDate ?? "")
+          break
+        case "planned":
+          cmp = a.plannedAmount - b.plannedAmount
+          break
+        case "paid":
+          cmp = a.paidAmount - b.paidAmount
+          break
+        case "remaining":
+          cmp = (a.plannedAmount - a.paidAmount) - (b.plannedAmount - b.paidAmount)
+          break
+      }
+      return sortDir === "asc" ? cmp : -cmp
+    })
+  }, [expenses, sortKey, sortDir])
+
+  function SortIcon({ column }: { column: SortKey }) {
+    if (sortKey !== column) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+    return sortDir === "asc"
+      ? <ArrowUp className="h-3 w-3 text-foreground" />
+      : <ArrowDown className="h-3 w-3 text-foreground" />
+  }
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
@@ -311,6 +360,35 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
     )
   }
 
+  const sortLabels: Record<SortKey, string> = {
+    description: "Descrição",
+    type: "Tipo",
+    date: "Data",
+    planned: "Valor",
+    paid: "Pago",
+    remaining: "Restante",
+  }
+
+  const sortBar = (
+    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto">
+      {(Object.keys(sortLabels) as SortKey[]).map((key) => (
+        <button
+          key={key}
+          className={cn(
+            "flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border whitespace-nowrap cursor-pointer",
+            sortKey === key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "text-muted-foreground hover:bg-muted border-transparent"
+          )}
+          onClick={() => toggleSort(key)}
+        >
+          {sortLabels[key]}
+          {sortKey === key && (sortDir === "asc" ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />)}
+        </button>
+      ))}
+    </div>
+  )
+
   const headerBar = (
     <div className="px-4 py-2.5 border-b flex items-center justify-between bg-red-50 dark:bg-red-950/30 rounded-t-lg">
       <h4 className="text-sm font-bold tracking-wide uppercase text-red-600 dark:text-red-400">
@@ -332,6 +410,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       {/* ========== MOBILE: Card list ========== */}
       <div className="sm:hidden rounded-lg border bg-card overflow-hidden">
         {headerBar}
+        {expenses.length > 1 && sortBar}
         <div className="p-2 space-y-2">
         {expenses.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground text-sm">
@@ -339,7 +418,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
           </div>
         ) : (
           <>
-            {expenses.map((exp) => {
+            {sortedExpenses.map((exp) => {
               const remaining = exp.plannedAmount - exp.paidAmount
               const isPaid = remaining <= 0
 
@@ -369,7 +448,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                         />
                       ) : (
                         <button
-                          className={cn("text-sm font-medium truncate text-left hover:bg-muted px-1 rounded cursor-pointer", isPaid && "line-through text-muted-foreground")}
+                          className={cn("text-sm font-medium text-left hover:bg-muted px-1 rounded cursor-pointer break-words", isPaid && "line-through text-muted-foreground")}
                           onClick={() => startEdit(exp, "description")}
                         >
                           {exp.description}
@@ -495,12 +574,12 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead className="w-20">Tipo</TableHead>
-              <TableHead className="w-32">Data</TableHead>
-              <TableHead className="text-right w-28">Valor</TableHead>
-              <TableHead className="text-right w-28">Pago</TableHead>
-              <TableHead className="text-right w-28">Restante</TableHead>
+              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon column="description" /></button></TableHead>
+              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
+              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("planned")}>Valor <SortIcon column="planned" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("paid")}>Pago <SortIcon column="paid" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("remaining")}>Restante <SortIcon column="remaining" /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -512,7 +591,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                 </TableCell>
               </TableRow>
             ) : (
-              expenses.map((exp) => {
+              sortedExpenses.map((exp) => {
                 const remaining = exp.plannedAmount - exp.paidAmount
                 const isPaid = remaining <= 0
 
