@@ -27,7 +27,7 @@ function applyThinBorder(cell: ExcelJS.Cell) {
 }
 
 function applyCurrencyFormat(cell: ExcelJS.Cell) {
-  cell.numFmt = '#.##0,00'
+  cell.numFmt = 'R$ #,##0.00'
   cell.alignment = { horizontal: "right" }
 }
 
