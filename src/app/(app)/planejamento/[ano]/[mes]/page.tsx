@@ -13,6 +13,9 @@ import {
   Trash2,
   X,
   Pencil,
+  FileText,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -182,6 +185,34 @@ export default function PlanejamentoPage({
     onError: (error: Error) => toast.error(error.message),
   })
 
+  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null)
+
+  async function handleExport(format: "pdf" | "excel") {
+    setExporting(format)
+    try {
+      const monthKey = `${year}-${String(month).padStart(2, "0")}`
+      const res = await fetch(`/api/export/${format}?months=${monthKey}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.error || "Erro ao exportar")
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1]
+        || `planfin-${monthKey}.${format === "pdf" ? "pdf" : "xlsx"}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Erro ao exportar. Tente novamente.")
+    } finally {
+      setExporting(null)
+    }
+  }
+
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null)
   const [editCutDay, setEditCutDay] = useState(1)
   const editInputRef = useRef<HTMLInputElement>(null)
@@ -295,9 +326,27 @@ export default function PlanejamentoPage({
         title={`${getMonthName(month)} ${year}`}
         description="Planejamento financeiro mensal"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2">
             {plan && (
               <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleExport("pdf")}
+                  disabled={exporting !== null}
+                  title="Exportar PDF"
+                >
+                  {exporting === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleExport("excel")}
+                  disabled={exporting !== null}
+                  title="Exportar Excel"
+                >
+                  {exporting === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
