@@ -446,8 +446,8 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                   className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isPaid
-                      ? "opacity-60"
-                      : "border-l-3 border-l-red-400 bg-red-50/40 dark:bg-red-950/10"
+                      ? "opacity-50 border-muted"
+                      : "border-l-3 border-l-red-400 border-red-200 bg-red-50/60 shadow-sm shadow-red-100 dark:bg-red-950/20 dark:border-red-800 dark:shadow-none"
                   )}
                 >
                   {/* Row 1: category dot + description */}
@@ -483,9 +483,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                       ) : (
                         <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
-                      <span className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         {renderDateEditor(exp)}
-                      </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {periodCount > 1 && period > 1 && (
@@ -592,7 +592,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                   <TableRow
                     key={exp.id}
                     className={cn(
-                      isPaid ? "bg-muted/30 opacity-60" : "bg-red-50/30 dark:bg-red-950/10"
+                      isPaid ? "bg-muted/30 opacity-50" : "bg-red-50/50 dark:bg-red-950/15"
                     )}
                   >
                     <TableCell className={cn(!isPaid && "border-l-3 border-l-red-400")}>

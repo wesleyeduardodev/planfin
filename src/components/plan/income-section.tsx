@@ -379,8 +379,8 @@ export function IncomeSection({
                     className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isReceived
-                      ? "opacity-60"
-                      : "border-l-3 border-l-amber-400 bg-amber-50/40 dark:bg-amber-950/10"
+                      ? "opacity-50 border-muted"
+                      : "border-l-3 border-l-amber-400 border-amber-200 bg-amber-50/60 shadow-sm shadow-amber-100 dark:bg-amber-950/20 dark:border-amber-800 dark:shadow-none"
                   )}>
                     {/* Row 1: description */}
                     <div className="min-w-0">
@@ -410,9 +410,9 @@ export function IncomeSection({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         {renderTypeBadge(inc)}
-                        <span className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {renderDateEditor(inc)}
-                        </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {periodCount > 1 && period > 1 && (
@@ -498,7 +498,7 @@ export function IncomeSection({
 
                 return (
                   <TableRow key={inc.id} className={cn(
-                    isReceived ? "opacity-60" : "bg-amber-50/30 dark:bg-amber-950/10"
+                    isReceived ? "opacity-50" : "bg-amber-50/50 dark:bg-amber-950/15"
                   )}>
                     <TableCell className={cn("text-sm", !isReceived && "border-l-3 border-l-amber-400")}>
                       {editingId === inc.id && editField === "description" ? (
