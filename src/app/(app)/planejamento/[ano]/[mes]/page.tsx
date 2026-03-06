@@ -336,7 +336,7 @@ export default function PlanejamentoPage({
                   disabled={exporting !== null}
                   title="Exportar PDF"
                 >
-                  {exporting === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                  {exporting === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-red-500" />}
                 </Button>
                 <Button
                   variant="outline"
@@ -345,7 +345,7 @@ export default function PlanejamentoPage({
                   disabled={exporting !== null}
                   title="Exportar Excel"
                 >
-                  {exporting === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                  {exporting === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
                 </Button>
                 <Button
                   variant="outline"
