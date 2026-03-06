@@ -15,6 +15,12 @@ const COLORS = {
   zebra: "FFf8fafc",
   border: "FFe2e8f0",
   summaryBg: "FFf1f5f9",
+  pendingExpenseBg: "FFfef2f2",
+  paidBg: "FFf1f5f9",
+  pendingIncomeBg: "FFfffbeb",
+  mutedText: "FF94a3b8",
+  greenText: "FF10b981",
+  redText: "FFef4444",
 }
 
 function applyThinBorder(cell: ExcelJS.Cell) {
@@ -147,7 +153,8 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
 
         // Data rows
         periodIncomes.forEach((inc, idx) => {
-          const fill = idx % 2 === 1 ? COLORS.zebra : undefined
+          const isReceived = inc.receivedAmount >= inc.expectedAmount
+          const fill = !isReceived ? COLORS.pendingIncomeBg : (idx % 2 === 1 ? COLORS.zebra : undefined)
           currentRow = setRowValues(sheet, currentRow,
             [
               inc.description,
@@ -208,7 +215,8 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
 
         // Data rows
         periodExpenses.forEach((exp, idx) => {
-          const fill = idx % 2 === 1 ? COLORS.zebra : undefined
+          const isPaid = exp.paidAmount >= exp.plannedAmount
+          const fill = !isPaid ? COLORS.pendingExpenseBg : (idx % 2 === 1 ? COLORS.zebra : undefined)
           const catColor = exp.category?.color || undefined
           currentRow = setRowValues(sheet, currentRow,
             [

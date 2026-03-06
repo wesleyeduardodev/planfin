@@ -32,10 +32,15 @@ const COLORS = {
   header: "#1e3a5f",
   green: "#10b981",
   red: "#ef4444",
+  amber: "#f59e0b",
   incomeHeaderBg: "#ecfdf5",
   expenseHeaderBg: "#fef2f2",
   zebra: "#f8fafc",
   border: "#e2e8f0",
+  pendingExpenseBg: "#fef2f2",
+  paidExpenseBg: "#f1f5f9",
+  pendingIncomeBg: "#fffbeb",
+  receivedIncomeBg: "#f1f5f9",
 }
 
 function createPrinter() {
@@ -121,13 +126,16 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
           ],
         ]
 
+        const incomeRowPending: boolean[] = []
         for (const inc of periodIncomes) {
+          const isReceived = inc.receivedAmount >= inc.expectedAmount
+          incomeRowPending.push(!isReceived)
           incomeBody.push([
             inc.description,
             inc.isFixed ? "Fixa" : "Variável",
             inc.dueDate ? formatShortDate(inc.dueDate) : "-",
             { text: formatCurrency(inc.expectedAmount), alignment: "right" },
-            { text: formatCurrency(inc.receivedAmount), alignment: "right" },
+            { text: formatCurrency(inc.receivedAmount), alignment: "right", color: !isReceived ? COLORS.red : undefined },
           ])
         }
 
@@ -146,8 +154,14 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             body: incomeBody,
           },
           layout: {
-            fillColor: (rowIndex: number) =>
-              rowIndex === 0 ? COLORS.incomeHeaderBg : rowIndex % 2 === 0 ? COLORS.zebra : null,
+            fillColor: (rowIndex: number) => {
+              if (rowIndex === 0) return COLORS.incomeHeaderBg
+              const dataIdx = rowIndex - 1
+              if (dataIdx < incomeRowPending.length && incomeRowPending[dataIdx]) {
+                return COLORS.pendingIncomeBg
+              }
+              return rowIndex % 2 === 0 ? COLORS.zebra : null
+            },
             hLineWidth: () => 0.5,
             vLineWidth: () => 0.5,
             hLineColor: () => COLORS.border,
@@ -178,14 +192,17 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
           ],
         ]
 
+        const expenseRowPending: boolean[] = []
         for (const exp of periodExpenses) {
+          const isPaid = exp.paidAmount >= exp.plannedAmount
+          expenseRowPending.push(!isPaid)
           expenseBody.push([
             { text: exp.category?.name || "-", color: exp.category?.color || "#6b7280" },
             exp.description,
             exp.isFixed ? "Fixa" : "Variável",
             exp.dueDate ? formatShortDate(exp.dueDate) : "-",
             { text: formatCurrency(exp.plannedAmount), alignment: "right" },
-            { text: formatCurrency(exp.paidAmount), alignment: "right" },
+            { text: formatCurrency(exp.paidAmount), alignment: "right", color: !isPaid ? COLORS.red : undefined },
           ])
         }
 
@@ -205,8 +222,14 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             body: expenseBody,
           },
           layout: {
-            fillColor: (rowIndex: number) =>
-              rowIndex === 0 ? COLORS.expenseHeaderBg : rowIndex % 2 === 0 ? COLORS.zebra : null,
+            fillColor: (rowIndex: number) => {
+              if (rowIndex === 0) return COLORS.expenseHeaderBg
+              const dataIdx = rowIndex - 1
+              if (dataIdx < expenseRowPending.length && expenseRowPending[dataIdx]) {
+                return COLORS.pendingExpenseBg
+              }
+              return rowIndex % 2 === 0 ? COLORS.zebra : null
+            },
             hLineWidth: () => 0.5,
             vLineWidth: () => 0.5,
             hLineColor: () => COLORS.border,

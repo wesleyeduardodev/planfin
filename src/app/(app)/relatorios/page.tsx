@@ -355,9 +355,25 @@ export default function RelatoriosPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.monthlySummary.map((d) => (
-                    <TableRow key={`${d.year}-${d.month}`}>
-                      <TableCell className="font-medium">
+                  {data.monthlySummary.map((d) => {
+                    const hasPending = d.totalPaid < d.totalExpenses
+                    const hasUnreceived = d.totalReceived < d.totalIncome
+                    return (
+                    <TableRow
+                      key={`${d.year}-${d.month}`}
+                      className={cn(
+                        hasPending
+                          ? "bg-red-50/50 dark:bg-red-950/15"
+                          : hasUnreceived
+                            ? "bg-amber-50/50 dark:bg-amber-950/15"
+                            : "opacity-60"
+                      )}
+                    >
+                      <TableCell className={cn(
+                        "font-medium",
+                        hasPending && "border-l-3 border-l-red-400",
+                        !hasPending && hasUnreceived && "border-l-3 border-l-amber-400"
+                      )}>
                         {getMonthName(d.month)} {d.year}
                       </TableCell>
                       <TableCell className="text-right font-mono text-emerald-600">
@@ -386,7 +402,8 @@ export default function RelatoriosPage() {
                         {formatCurrency(d.realBalance)}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
