@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { signOut } from "next-auth/react"
 import {
-  LayoutDashboard,
   CalendarRange,
   Tags,
   BarChart3,
@@ -14,7 +13,6 @@ import {
   X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { nowBR } from "@/lib/format"
 
 function PlanFinLogo({ className }: { className?: string }) {
   return (
@@ -45,7 +43,6 @@ function PlanFinLogo({ className }: { className?: string }) {
 }
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/planejamento", label: "Planejamento", icon: CalendarRange },
   { href: "/categorias", label: "Categorias", icon: Tags },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
@@ -59,12 +56,8 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { year: currentYear, month: currentMonth } = nowBR()
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/"
-    return pathname.startsWith(href)
-  }
+  const isActive = (href: string) => pathname.startsWith(href)
 
   return (
     <>
@@ -108,11 +101,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             return (
               <Link
                 key={item.href}
-                href={
-                  item.href === "/planejamento"
-                    ? `/planejamento/${currentYear}/${currentMonth}`
-                    : item.href
-                }
+                href={item.href === "/planejamento" ? "/" : item.href}
                 onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
