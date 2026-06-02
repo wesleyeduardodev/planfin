@@ -6,7 +6,7 @@ function getPreviousMonth(year: number, month: number) {
   return { prevYear, prevMonth }
 }
 
-async function calcInitialBalance(userId: string, year: number, month: number) {
+export async function calcInitialBalance(userId: string, year: number, month: number) {
   const { prevYear, prevMonth } = getPreviousMonth(year, month)
   const prevPlan = await prisma.monthlyPlan.findUnique({
     where: { userId_year_month: { userId, year: prevYear, month: prevMonth } },

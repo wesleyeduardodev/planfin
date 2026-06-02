@@ -16,6 +16,8 @@ import {
   FileText,
   FileSpreadsheet,
   Loader2,
+  Check,
+  RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,6 +36,7 @@ import { PeriodSummary } from "@/components/plan/period-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { CurrencyInput } from "@/components/shared/currency-input"
 import { getMonthName, formatCurrency } from "@/lib/format"
 import { calcPeriodSummary } from "@/lib/calculations"
 import { getPeriodLabel } from "@/lib/periods"
@@ -239,6 +242,39 @@ export default function PlanejamentoPage({
     onError: (error: Error) => toast.error(error.message),
   })
 
+  const [editingBalance, setEditingBalance] = useState(false)
+  const [balanceInput, setBalanceInput] = useState(0)
+
+  const updateBalanceMutation = useMutation({
+    mutationFn: async (payload: { initialBalance: number } | { recalc: true }) => {
+      if (!plan) return
+      const res = await fetch(`/api/plans/${plan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erro ao atualizar saldo")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["reports"] })
+      setEditingBalance(false)
+      toast.success("Saldo do mês anterior atualizado")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  function startEditBalance() {
+    if (!plan) return
+    setBalanceInput(plan.initialBalance)
+    setEditingBalance(true)
+  }
+
   function startEditPeriod(period: number) {
     if (!plan) return
     setEditCutDay(plan.cutDays[period - 1])
@@ -437,7 +473,7 @@ export default function PlanejamentoPage({
             const isPositive = bal >= 0
             return (
               <div className={cn(
-                "rounded-lg border px-4 py-3 flex items-center justify-between mb-6",
+                "rounded-lg border px-4 py-3 flex items-center justify-between gap-3 mb-6",
                 isPositive
                   ? "bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
                   : "bg-red-50/80 border-red-200 dark:bg-red-950/20 dark:border-red-800"
@@ -445,12 +481,61 @@ export default function PlanejamentoPage({
                 <span className="text-sm text-muted-foreground">
                   Saldo de {getMonthName(prevMonth)} {prevYear}
                 </span>
-                <span className={cn(
-                  "font-mono font-bold text-lg",
-                  isPositive ? "text-emerald-600" : "text-red-500"
-                )}>
-                  {formatCurrency(bal)}
-                </span>
+                {editingBalance ? (
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      updateBalanceMutation.mutate({ initialBalance: balanceInput })
+                    }}
+                  >
+                    <CurrencyInput
+                      value={balanceInput}
+                      onChange={setBalanceInput}
+                      className="h-8 w-36 text-right font-mono"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-muted-foreground"
+                      title={`Recalcular a partir de ${getMonthName(prevMonth)} ${prevYear}`}
+                      disabled={updateBalanceMutation.isPending}
+                      onClick={() => updateBalanceMutation.mutate({ recalc: true })}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button type="submit" size="icon" variant="outline" className="h-8 w-8" disabled={updateBalanceMutation.isPending}>
+                      {updateBalanceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={() => setEditingBalance(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "font-mono font-bold text-lg",
+                      isPositive ? "text-emerald-600" : "text-red-500"
+                    )}>
+                      {formatCurrency(bal)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={startEditBalance}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      title="Editar saldo do mês anterior"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })()}
