@@ -94,6 +94,7 @@ export default function PlanejamentoPage({
   const [addIncomeOpen, setAddIncomeOpen] = useState(false)
   const [addIncomePeriod, setAddIncomePeriod] = useState(1)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [deletePeriod, setDeletePeriod] = useState<number | null>(null)
   const [addPeriodOpen, setAddPeriodOpen] = useState(false)
   const [newPeriodDay, setNewPeriodDay] = useState(15)
@@ -147,6 +148,25 @@ export default function PlanejamentoPage({
       toast.success("Plano excluído com sucesso")
     },
     onError: (error: Error) => toast.error(error.message),
+  })
+
+  const copyAveragesMutation = useMutation({
+    mutationFn: async () => {
+      if (!plan) return
+      const res = await fetch(`/api/plans/${plan.id}/copy-averages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      if (!res.ok) throw new Error()
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setCopyAveragesOpen(false)
+      toast.success("Valores copiados para o Médio em todos os períodos")
+    },
+    onError: () => toast.error("Erro ao copiar valores"),
   })
 
   const deletePeriodMutation = useMutation({
@@ -385,6 +405,14 @@ export default function PlanejamentoPage({
                   title="Exportar Excel"
                 >
                   {exporting === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCopyAveragesOpen(true)}
+                  title="Copiar valores para o Médio (todos os períodos)"
+                >
+                  <Copy className="h-4 w-4 text-muted-foreground" />
                 </Button>
                 <Button
                   variant="outline"
@@ -764,6 +792,18 @@ export default function PlanejamentoPage({
             period={addIncomePeriod}
             year={year}
             month={month}
+          />
+
+          <ConfirmDialog
+            open={copyAveragesOpen}
+            onOpenChange={setCopyAveragesOpen}
+            title="Copiar para Médio — Mês Inteiro"
+            description="Copiar o Valor/Esperado de todas as despesas e receitas de todos os períodos para a coluna Médio? Valores médios já preenchidos serão sobrescritos."
+            onConfirm={() => copyAveragesMutation.mutate()}
+            loading={copyAveragesMutation.isPending}
+            confirmLabel="Copiar"
+            loadingLabel="Copiando..."
+            confirmVariant="default"
           />
 
           <ConfirmDialog

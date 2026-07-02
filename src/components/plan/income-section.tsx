@@ -40,6 +40,7 @@ interface IncomeSectionProps {
 }
 
 export function IncomeSection({
+  planId,
   incomes,
   period,
   periodCount,
@@ -53,6 +54,7 @@ export function IncomeSection({
   const [editField, setEditField] = useState<"expected" | "received" | "average" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanIncome | null>(null)
+  const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ income: PlanIncome; direction: -1 | 1 } | null>(null)
 
   type SortKey = "description" | "type" | "date" | "expected" | "average" | "received"
@@ -126,6 +128,23 @@ export function IncomeSection({
       setEditingId(null)
     },
     onError: () => toast.error("Erro ao atualizar"),
+  })
+
+  const copyAveragesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/plans/${planId}/copy-averages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period, target: "incomes" }),
+      })
+      if (!res.ok) throw new Error()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setCopyAveragesOpen(false)
+      toast.success("Valores copiados para o Médio")
+    },
+    onError: () => toast.error("Erro ao copiar valores"),
   })
 
   const deleteMutation = useMutation({
@@ -403,14 +422,27 @@ export function IncomeSection({
       <h4 className="text-sm font-bold tracking-wide uppercase text-emerald-600 dark:text-emerald-400">
         Receitas
       </h4>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-xs font-semibold"
-        onClick={onAddIncome}
-      >
-        <Plus className="mr-1 h-3 w-3" /> Entrada
-      </Button>
+      <div className="flex items-center gap-1">
+        {incomes.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs font-semibold text-muted-foreground"
+            onClick={() => setCopyAveragesOpen(true)}
+            title="Copiar Esperado de todas as receitas deste período para o Médio"
+          >
+            <Copy className="mr-1 h-3 w-3" /> Médio
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs font-semibold"
+          onClick={onAddIncome}
+        >
+          <Plus className="mr-1 h-3 w-3" /> Entrada
+        </Button>
+      </div>
     </div>
   )
 
@@ -695,6 +727,18 @@ export function IncomeSection({
         description="Remover esta receita do plano?"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         loading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={copyAveragesOpen}
+        onOpenChange={setCopyAveragesOpen}
+        title="Copiar para Médio"
+        description={`Copiar o Esperado de todas as receitas do Período ${period} para a coluna Médio? Valores médios já preenchidos serão sobrescritos.`}
+        onConfirm={() => copyAveragesMutation.mutate()}
+        loading={copyAveragesMutation.isPending}
+        confirmLabel="Copiar"
+        loadingLabel="Copiando..."
+        confirmVariant="default"
       />
 
       <ConfirmDialog

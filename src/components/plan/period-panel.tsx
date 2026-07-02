@@ -53,13 +53,14 @@ interface Category {
   color: string
 }
 
-export function PeriodPanel({ expenses, period, periodCount, year, month, onAddExpense }: PeriodPanelProps) {
+export function PeriodPanel({ planId, expenses, period, periodCount, year, month, onAddExpense }: PeriodPanelProps) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"planned" | "paid" | "average" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanExpense | null>(null)
+  const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ expense: PlanExpense; direction: -1 | 1 } | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
@@ -179,6 +180,23 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       setEditingId(null)
     },
     onError: () => toast.error("Erro ao atualizar"),
+  })
+
+  const copyAveragesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/plans/${planId}/copy-averages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period, target: "expenses" }),
+      })
+      if (!res.ok) throw new Error()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
+      setCopyAveragesOpen(false)
+      toast.success("Valores copiados para o Médio")
+    },
+    onError: () => toast.error("Erro ao copiar valores"),
   })
 
   const deleteMutation = useMutation({
@@ -469,14 +487,27 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       <h4 className="text-sm font-bold tracking-wide uppercase text-red-600 dark:text-red-400">
         Despesas
       </h4>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-xs font-semibold"
-        onClick={onAddExpense}
-      >
-        <Plus className="mr-1 h-3 w-3" /> Despesa
-      </Button>
+      <div className="flex items-center gap-1">
+        {expenses.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs font-semibold text-muted-foreground"
+            onClick={() => setCopyAveragesOpen(true)}
+            title="Copiar Valor de todas as despesas deste período para o Médio"
+          >
+            <Copy className="mr-1 h-3 w-3" /> Médio
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs font-semibold"
+          onClick={onAddExpense}
+        >
+          <Plus className="mr-1 h-3 w-3" /> Despesa
+        </Button>
+      </div>
     </div>
   )
 
@@ -837,6 +868,18 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
         description="Remover esta despesa do plano?"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         loading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={copyAveragesOpen}
+        onOpenChange={setCopyAveragesOpen}
+        title="Copiar para Médio"
+        description={`Copiar o Valor de todas as despesas do Período ${period} para a coluna Médio? Valores médios já preenchidos serão sobrescritos.`}
+        onConfirm={() => copyAveragesMutation.mutate()}
+        loading={copyAveragesMutation.isPending}
+        confirmLabel="Copiar"
+        loadingLabel="Copiando..."
+        confirmVariant="default"
       />
 
       <ConfirmDialog
