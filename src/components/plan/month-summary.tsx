@@ -2,18 +2,20 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
 
 interface MonthSummaryProps {
-  expenses: { plannedAmount: number; isFixed: boolean }[]
-  incomes: { expectedAmount: number; isFixed: boolean }[]
+  expenses: { plannedAmount: number; averageAmount: number | null; isFixed: boolean }[]
+  incomes: { expectedAmount: number; averageAmount: number | null; isFixed: boolean }[]
 }
 
 export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
   const expenseFixed = expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
   const expenseTotal = expenses.reduce((s, e) => s + e.plannedAmount, 0)
   const expenseVariable = expenseTotal - expenseFixed
+  const expenseAverage = expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
 
   const incomeFixed = incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
   const incomeTotal = incomes.reduce((s, i) => s + i.expectedAmount, 0)
   const incomeVariable = incomeTotal - incomeFixed
+  const incomeAverage = incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
   return (
     <Card className="overflow-hidden">
@@ -41,6 +43,12 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
                 {formatCurrency(expenseVariable)}
               </span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground font-medium">Médio</span>
+              <span className="font-mono font-semibold text-muted-foreground">
+                {formatCurrency(expenseAverage)}
+              </span>
+            </div>
             <div className="border-t-2 pt-3 mt-3 border-red-200 dark:border-red-900">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-base">Total</span>
@@ -66,6 +74,12 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
               <span className="text-amber-600 dark:text-amber-400 font-medium">Variável</span>
               <span className="font-mono font-semibold">
                 {formatCurrency(incomeVariable)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground font-medium">Médio</span>
+              <span className="font-mono font-semibold text-muted-foreground">
+                {formatCurrency(incomeAverage)}
               </span>
             </div>
             <div className="border-t-2 pt-3 mt-3 border-emerald-200 dark:border-emerald-900">

@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         description: data.description,
         expectedAmount: data.expectedAmount,
         receivedAmount: data.receivedAmount ?? 0,
+        averageAmount: data.averageAmount ?? null,
         dueDate: data.dueDate ? toNoonUTC(data.dueDate) : undefined,
         isFixed: data.isFixed ?? true,
       },

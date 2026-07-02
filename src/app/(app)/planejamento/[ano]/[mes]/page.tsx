@@ -50,6 +50,7 @@ interface PlanExpense {
   dueDate: string | null
   plannedAmount: number
   paidAmount: number
+  averageAmount: number | null
   isFixed: boolean
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
@@ -61,6 +62,7 @@ interface PlanIncome {
   description: string
   expectedAmount: number
   receivedAmount: number
+  averageAmount: number | null
   dueDate: string | null
   isFixed: boolean
 }

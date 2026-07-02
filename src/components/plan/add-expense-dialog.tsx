@@ -48,6 +48,7 @@ export function AddExpenseDialog({
   const [form, setForm] = useState({
     description: "",
     plannedAmount: 0,
+    averageAmount: 0,
     dueDate: "",
     categoryId: "",
     isFixed: true,
@@ -70,6 +71,7 @@ export function AddExpenseDialog({
           description: form.description,
           plannedAmount: form.plannedAmount,
           paidAmount: form.alreadyPaid ? form.plannedAmount : 0,
+          averageAmount: form.averageAmount > 0 ? form.averageAmount : null,
           dueDate: form.dueDate || null,
           categoryId: form.categoryId || null,
           isFixed: form.isFixed,
@@ -81,7 +83,7 @@ export function AddExpenseDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", plannedAmount: 0, dueDate: "", categoryId: "", isFixed: true, alreadyPaid: false })
+      setForm({ description: "", plannedAmount: 0, averageAmount: 0, dueDate: "", categoryId: "", isFixed: true, alreadyPaid: false })
       toast.success("Despesa adicionada")
     },
     onError: () => toast.error("Erro ao adicionar despesa"),
@@ -143,13 +145,22 @@ export function AddExpenseDialog({
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Data de Vencimento</Label>
-            <Input
-              type="date"
-              value={form.dueDate}
-              onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Valor Médio (opcional)</Label>
+              <CurrencyInput
+                value={form.averageAmount}
+                onChange={(v) => setForm({ ...form, averageAmount: v })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Vencimento</Label>
+              <Input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+              />
+            </div>
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer">

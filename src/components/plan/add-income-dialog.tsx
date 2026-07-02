@@ -35,6 +35,7 @@ export function AddIncomeDialog({
   const [form, setForm] = useState({
     description: "",
     expectedAmount: 0,
+    averageAmount: 0,
     dueDate: "",
     isFixed: true,
     alreadyReceived: false,
@@ -51,6 +52,7 @@ export function AddIncomeDialog({
           description: form.description,
           expectedAmount: form.expectedAmount,
           receivedAmount: form.alreadyReceived ? form.expectedAmount : 0,
+          averageAmount: form.averageAmount > 0 ? form.averageAmount : null,
           dueDate: form.dueDate || null,
           isFixed: form.isFixed,
         }),
@@ -61,7 +63,7 @@ export function AddIncomeDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", expectedAmount: 0, dueDate: "", isFixed: true, alreadyReceived: false })
+      setForm({ description: "", expectedAmount: 0, averageAmount: 0, dueDate: "", isFixed: true, alreadyReceived: false })
       toast.success("Receita adicionada")
     },
     onError: () => toast.error("Erro ao adicionar receita"),
@@ -91,12 +93,21 @@ export function AddIncomeDialog({
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label>Valor Esperado</Label>
-            <CurrencyInput
-              value={form.expectedAmount}
-              onChange={(v) => setForm({ ...form, expectedAmount: v })}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Valor Esperado</Label>
+              <CurrencyInput
+                value={form.expectedAmount}
+                onChange={(v) => setForm({ ...form, expectedAmount: v })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor Médio (opcional)</Label>
+              <CurrencyInput
+                value={form.averageAmount}
+                onChange={(v) => setForm({ ...form, averageAmount: v })}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Data</Label>

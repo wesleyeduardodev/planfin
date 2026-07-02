@@ -24,6 +24,7 @@ interface PlanIncome {
   description: string
   expectedAmount: number
   receivedAmount: number
+  averageAmount: number | null
   dueDate: string | null
   isFixed: boolean
 }
@@ -49,12 +50,12 @@ export function IncomeSection({
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [editField, setEditField] = useState<"expected" | "received" | "description" | "date">("expected")
+  const [editField, setEditField] = useState<"expected" | "received" | "average" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanIncome | null>(null)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ income: PlanIncome; direction: -1 | 1 } | null>(null)
 
-  type SortKey = "description" | "type" | "date" | "expected" | "received"
+  type SortKey = "description" | "type" | "date" | "expected" | "average" | "received"
   type SortDir = "asc" | "desc"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -84,6 +85,9 @@ export function IncomeSection({
           break
         case "expected":
           cmp = a.expectedAmount - b.expectedAmount
+          break
+        case "average":
+          cmp = (a.averageAmount ?? 0) - (b.averageAmount ?? 0)
           break
         case "received":
           cmp = a.receivedAmount - b.receivedAmount
@@ -137,7 +141,7 @@ export function IncomeSection({
     onError: () => toast.error("Erro ao remover"),
   })
 
-  function startEdit(income: PlanIncome, field: "expected" | "received" | "description" | "date") {
+  function startEdit(income: PlanIncome, field: "expected" | "received" | "average" | "description" | "date") {
     setEditingId(income.id)
     setEditField(field)
     if (field === "description") {
@@ -153,6 +157,12 @@ export function IncomeSection({
         const mm = String(month).padStart(2, "0")
         setEditValue(`${year}-${mm}-01`)
       }
+    } else if (field === "average") {
+      setEditValue(
+        income.averageAmount != null
+          ? income.averageAmount.toFixed(2).replace(".", ",")
+          : ""
+      )
     } else {
       setEditValue(
         field === "expected"
@@ -180,6 +190,10 @@ export function IncomeSection({
       updateMutation.mutate({ id, data: { dueDate: `${editValue}T12:00:00Z` } })
       return
     }
+    if (editField === "average" && !editValue.trim()) {
+      updateMutation.mutate({ id, data: { averageAmount: null } })
+      return
+    }
     const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
     if (isNaN(parsed)) {
       setEditingId(null)
@@ -188,7 +202,9 @@ export function IncomeSection({
     const data =
       editField === "expected"
         ? { expectedAmount: parsed }
-        : { receivedAmount: parsed }
+        : editField === "average"
+          ? { averageAmount: parsed }
+          : { receivedAmount: parsed }
     updateMutation.mutate({ id, data })
   }
 
@@ -227,8 +243,13 @@ export function IncomeSection({
     })
   }
 
-  function renderCurrencyEditor(inc: PlanIncome, field: "expected" | "received") {
-    const value = field === "expected" ? inc.expectedAmount : inc.receivedAmount
+  function renderCurrencyEditor(inc: PlanIncome, field: "expected" | "received" | "average") {
+    const value =
+      field === "expected"
+        ? inc.expectedAmount
+        : field === "average"
+          ? inc.averageAmount
+          : inc.receivedAmount
     const isReceived = inc.receivedAmount >= inc.expectedAmount
 
     if (editingId === inc.id && editField === field) {
@@ -250,11 +271,12 @@ export function IncomeSection({
       <button
         className={cn(
           "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-          field === "received" && isReceived && "text-emerald-600"
+          field === "received" && isReceived && "text-emerald-600",
+          field === "average" && "text-muted-foreground"
         )}
         onClick={() => startEdit(inc, field)}
       >
-        {formatCurrency(value)}
+        {value != null ? formatCurrency(value) : "—"}
       </button>
     )
   }
@@ -314,6 +336,7 @@ export function IncomeSection({
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
   const totalFixed = incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
   const totalVariable = totalExpected - totalFixed
+  const totalAverage = incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
   const fixedVariableBreakdown = (
     <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
@@ -334,6 +357,7 @@ export function IncomeSection({
     type: "Tipo",
     date: "Data",
     expected: "Esperado",
+    average: "Médio",
     received: "Recebido",
   }
 
@@ -465,6 +489,10 @@ export function IncomeSection({
                         <span className="text-muted-foreground text-xs block">Esperado</span>
                         {renderCurrencyEditor(inc, "expected")}
                       </div>
+                      <div className="text-center">
+                        <span className="text-muted-foreground text-xs block">Médio</span>
+                        {renderCurrencyEditor(inc, "average")}
+                      </div>
                       <div className="text-right">
                         <span className="text-muted-foreground text-xs block">Recebido</span>
                         {renderCurrencyEditor(inc, "received")}
@@ -486,6 +514,13 @@ export function IncomeSection({
                 <div className="mt-2 pt-2 border-t">
                   {fixedVariableBreakdown}
                 </div>
+                {totalAverage > 0 && (
+                  <div className="flex justify-end mt-1">
+                    <span className="font-mono text-xs text-muted-foreground">
+                      Médio: {formatCurrency(totalAverage)}
+                    </span>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -502,6 +537,7 @@ export function IncomeSection({
               <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
               <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("expected")}>Esperado <SortIcon column="expected" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon column="average" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("received")}>Recebido <SortIcon column="received" /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
@@ -509,7 +545,7 @@ export function IncomeSection({
           <TableBody>
             {incomes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground text-sm">
+                <TableCell colSpan={7} className="text-center py-4 text-muted-foreground text-sm">
                   Nenhuma receita
                 </TableCell>
               </TableRow>
@@ -551,6 +587,9 @@ export function IncomeSection({
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(inc, "expected")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {renderCurrencyEditor(inc, "average")}
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(inc, "received")}
@@ -617,6 +656,9 @@ export function IncomeSection({
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalExpected)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-base text-muted-foreground">
+                  {formatCurrency(totalAverage)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalReceived)}

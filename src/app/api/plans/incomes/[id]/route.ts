@@ -28,6 +28,7 @@ export async function PUT(
         description: data.description,
         expectedAmount: data.expectedAmount,
         receivedAmount: data.receivedAmount,
+        averageAmount: data.averageAmount,
         dueDate: data.dueDate !== undefined ? (data.dueDate ? toNoonUTC(data.dueDate) : null) : undefined,
         isFixed: data.isFixed,
         period: data.period,

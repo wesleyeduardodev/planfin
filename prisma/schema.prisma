@@ -74,6 +74,7 @@ model PlanExpense {
   dueDate            DateTime? @map("due_date")
   plannedAmount      Float     @map("planned_amount")
   paidAmount         Float     @default(0) @map("paid_amount")
+  averageAmount      Float?    @map("average_amount")
   isFixed    Boolean @default(true) @map("is_fixed")
   categoryId String? @map("category_id")
 
@@ -90,6 +91,7 @@ model PlanIncome {
   description    String
   expectedAmount Float     @map("expected_amount")
   receivedAmount Float     @default(0) @map("received_amount")
+  averageAmount  Float?    @map("average_amount")
   dueDate        DateTime? @map("due_date")
   isFixed Boolean @default(true) @map("is_fixed")
 

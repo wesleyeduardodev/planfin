@@ -31,6 +31,7 @@ interface PlanExpense {
   dueDate: string | null
   plannedAmount: number
   paidAmount: number
+  averageAmount: number | null
   isFixed: boolean
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
@@ -56,14 +57,14 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [editField, setEditField] = useState<"planned" | "paid" | "date" | "description">("planned")
+  const [editField, setEditField] = useState<"planned" | "paid" | "average" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanExpense | null>(null)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ expense: PlanExpense; direction: -1 | 1 } | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
 
-  type SortKey = "description" | "type" | "date" | "planned" | "paid" | "remaining"
+  type SortKey = "description" | "type" | "date" | "planned" | "average" | "paid" | "remaining"
   type SortDir = "asc" | "desc"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -93,6 +94,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
           break
         case "planned":
           cmp = a.plannedAmount - b.plannedAmount
+          break
+        case "average":
+          cmp = (a.averageAmount ?? 0) - (b.averageAmount ?? 0)
           break
         case "paid":
           cmp = a.paidAmount - b.paidAmount
@@ -190,7 +194,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
     onError: () => toast.error("Erro ao remover"),
   })
 
-  function startEdit(expense: PlanExpense, field: "planned" | "paid" | "date" | "description") {
+  function startEdit(expense: PlanExpense, field: "planned" | "paid" | "average" | "date" | "description") {
     setEditingId(expense.id)
     setEditField(field)
     if (field === "description") {
@@ -206,6 +210,12 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
         const mm = String(month).padStart(2, "0")
         setEditValue(`${year}-${mm}-01`)
       }
+    } else if (field === "average") {
+      setEditValue(
+        expense.averageAmount != null
+          ? expense.averageAmount.toFixed(2).replace(".", ",")
+          : ""
+      )
     } else {
       setEditValue(
         field === "planned"
@@ -233,6 +243,10 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       updateMutation.mutate({ id, data: { dueDate: `${editValue}T12:00:00Z` } as unknown as Partial<PlanExpense> })
       return
     }
+    if (editField === "average" && !editValue.trim()) {
+      updateMutation.mutate({ id, data: { averageAmount: null } })
+      return
+    }
     const parsed = parseFloat(editValue.replace(/\./g, "").replace(",", "."))
     if (isNaN(parsed)) {
       setEditingId(null)
@@ -241,7 +255,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
     const data =
       editField === "planned"
         ? { plannedAmount: parsed }
-        : { paidAmount: parsed }
+        : editField === "average"
+          ? { averageAmount: parsed }
+          : { paidAmount: parsed }
     updateMutation.mutate({ id, data })
   }
 
@@ -264,6 +280,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const totalRemaining = totalPlanned - totalPaid
   const totalFixed = expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
   const totalVariable = totalPlanned - totalFixed
+  const totalAverage = expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
 
   const fixedVariableBreakdown = (
     <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
@@ -328,8 +345,13 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   }
 
   // Shared: inline currency editor
-  function renderCurrencyEditor(exp: PlanExpense, field: "planned" | "paid") {
-    const value = field === "planned" ? exp.plannedAmount : exp.paidAmount
+  function renderCurrencyEditor(exp: PlanExpense, field: "planned" | "paid" | "average") {
+    const value =
+      field === "planned"
+        ? exp.plannedAmount
+        : field === "average"
+          ? exp.averageAmount
+          : exp.paidAmount
     const remaining = exp.plannedAmount - exp.paidAmount
     const isPaid = remaining <= 0
 
@@ -352,11 +374,12 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       <button
         className={cn(
           "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-          field === "paid" && isPaid && "text-emerald-600"
+          field === "paid" && isPaid && "text-emerald-600",
+          field === "average" && "text-muted-foreground"
         )}
         onClick={() => startEdit(exp, field)}
       >
-        {formatCurrency(value)}
+        {value != null ? formatCurrency(value) : "—"}
       </button>
     )
   }
@@ -399,6 +422,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
     type: "Tipo",
     date: "Data",
     planned: "Valor",
+    average: "Médio",
     paid: "Pago",
     remaining: "Restante",
   }
@@ -539,6 +563,10 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                       {renderCurrencyEditor(exp, "planned")}
                     </div>
                     <div className="text-center">
+                      <span className="text-muted-foreground text-xs block">Médio</span>
+                      {renderCurrencyEditor(exp, "average")}
+                    </div>
+                    <div className="text-center">
                       <span className="text-muted-foreground text-xs block">Pago</span>
                       {renderCurrencyEditor(exp, "paid")}
                     </div>
@@ -574,6 +602,13 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
               <div className="mt-2 pt-2 border-t">
                 {fixedVariableBreakdown}
               </div>
+              {totalAverage > 0 && (
+                <div className="flex justify-end mt-1">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    Médio: {formatCurrency(totalAverage)}
+                  </span>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -590,6 +625,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
               <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
               <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("planned")}>Valor <SortIcon column="planned" /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon column="average" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("paid")}>Pago <SortIcon column="paid" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("remaining")}>Restante <SortIcon column="remaining" /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
@@ -598,7 +634,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
           <TableBody>
             {expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   Nenhuma despesa
                 </TableCell>
               </TableRow>
@@ -662,6 +698,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(exp, "planned")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {renderCurrencyEditor(exp, "average")}
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(exp, "paid")}
@@ -742,6 +781,9 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPlanned)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-base text-muted-foreground">
+                  {formatCurrency(totalAverage)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPaid)}
