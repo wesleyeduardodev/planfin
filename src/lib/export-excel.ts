@@ -21,7 +21,12 @@ const COLORS = {
   mutedText: "FF94a3b8",
   greenText: "FF10b981",
   redText: "FFef4444",
+  indigoText: "FF4f46e5",
+  amberText: "FFd97706",
 }
+
+const LAST_COL = 8 // H
+const LAST_COL_LETTER = "H"
 
 function applyThinBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -37,37 +42,61 @@ function applyCurrencyFormat(cell: ExcelJS.Cell) {
   cell.alignment = { horizontal: "right" }
 }
 
-function setRowValues(sheet: ExcelJS.Worksheet, rowNum: number, values: (string | number | null)[], options?: {
-  bold?: boolean
-  fill?: string
-  fontColor?: string
-  isHeader?: boolean
-  isCurrency?: boolean[]
-  categoryColor?: string
-}) {
-  const row = sheet.getRow(rowNum)
-  values.forEach((val, colIdx) => {
-    const cell = row.getCell(colIdx + 1)
-    if (val !== null) cell.value = val
-    applyThinBorder(cell)
-
-    if (options?.bold) cell.font = { ...cell.font, bold: true }
-    if (options?.fontColor) cell.font = { ...cell.font, color: { argb: options.fontColor } }
-    if (options?.fill) {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: options.fill } }
-    }
-    if (options?.isHeader) {
-      cell.font = { bold: true, color: { argb: "FF1e293b" }, size: 10 }
-    }
-    if (options?.isCurrency?.[colIdx]) {
-      applyCurrencyFormat(cell)
-    }
-    if (colIdx === 0 && options?.categoryColor) {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${options.categoryColor.replace("#", "")}` } }
-      cell.font = { ...cell.font, color: { argb: "FFFFFFFF" }, bold: true }
-    }
+// Excel Tables dão a cada tabela seus próprios dropdowns de filtro —
+// sheet.autoFilter é um só por planilha e não serve para múltiplas tabelas.
+function addFilterableTable(
+  sheet: ExcelJS.Worksheet,
+  name: string,
+  headerRow: number,
+  columnNames: string[],
+  rows: (string | number | null)[][]
+) {
+  sheet.addTable({
+    name,
+    ref: `A${headerRow}`,
+    headerRow: true,
+    totalsRow: false,
+    style: { theme: undefined, showRowStripes: false },
+    columns: columnNames.map((n) => ({ name: n, filterButton: true })),
+    rows,
   })
-  return rowNum + 1
+}
+
+function styleHeaderRow(sheet: ExcelJS.Worksheet, rowNum: number, colCount: number, fill: string) {
+  const row = sheet.getRow(rowNum)
+  for (let c = 1; c <= colCount; c++) {
+    const cell = row.getCell(c)
+    cell.font = { bold: true, color: { argb: "FF1e293b" }, size: 10 }
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } }
+    applyThinBorder(cell)
+  }
+}
+
+function styleTotalRow(sheet: ExcelJS.Worksheet, rowNum: number, colCount: number, currencyFrom: number) {
+  const row = sheet.getRow(rowNum)
+  for (let c = 1; c <= colCount; c++) {
+    const cell = row.getCell(c)
+    cell.font = { ...cell.font, bold: true }
+    applyThinBorder(cell)
+    cell.border = {
+      ...cell.border,
+      top: { style: "double", color: { argb: COLORS.border } },
+    }
+    if (c >= currencyFrom) applyCurrencyFormat(cell)
+  }
+}
+
+// Linha "Fixo: X + Variável: Y = Z" abaixo do total, como na tela
+function addBreakdownRow(
+  sheet: ExcelJS.Worksheet,
+  rowNum: number,
+  fixed: number,
+  variable: number
+) {
+  sheet.mergeCells(`A${rowNum}:${LAST_COL_LETTER}${rowNum}`)
+  const cell = sheet.getCell(`A${rowNum}`)
+  cell.value = `Fixo: ${formatCurrency(fixed)}  +  Variável: ${formatCurrency(variable)}  =  ${formatCurrency(fixed + variable)}`
+  cell.font = { size: 9, italic: true, color: { argb: COLORS.mutedText } }
 }
 
 export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
@@ -90,12 +119,13 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
       { width: 12 }, // C - Tipo
       { width: 14 }, // D - Vencimento
       { width: 16 }, // E - Valor/Esperado
-      { width: 16 }, // F - Pago/Recebido
-      { width: 16 }, // G - Restante
+      { width: 16 }, // F - Médio
+      { width: 16 }, // G - Pago/Recebido
+      { width: 16 }, // H - Restante
     ]
 
     // Row 1: Title
-    sheet.mergeCells("A1:G1")
+    sheet.mergeCells(`A1:${LAST_COL_LETTER}1`)
     const titleCell = sheet.getCell("A1")
     titleCell.value = `PlanFin — ${monthName} ${plan.year}`
     titleCell.font = { size: 16, bold: true, color: { argb: COLORS.headerText } }
@@ -104,7 +134,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
     sheet.getRow(1).height = 32
 
     // Row 2: Initial balance
-    sheet.mergeCells("A2:G2")
+    sheet.mergeCells(`A2:${LAST_COL_LETTER}2`)
     const balanceCell = sheet.getCell("A2")
     balanceCell.value = `Saldo Inicial: ${formatCurrency(plan.initialBalance)}`
     balanceCell.font = { size: 11 }
@@ -125,7 +155,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
       const label = getPeriodLabel(plan.cutDays, p, daysInMonth)
 
       // Period header row
-      sheet.mergeCells(`A${currentRow}:G${currentRow}`)
+      sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
       const periodCell = sheet.getCell(`A${currentRow}`)
       periodCell.value = label
       periodCell.font = { bold: true, size: 12 }
@@ -137,130 +167,133 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
       // --- RECEITAS ---
       if (periodIncomes.length > 0) {
         // Section title
-        sheet.mergeCells(`A${currentRow}:G${currentRow}`)
+        sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
         const incTitle = sheet.getCell(`A${currentRow}`)
         incTitle.value = "RECEITAS"
         incTitle.font = { bold: true, size: 10, color: { argb: COLORS.incomeText } }
         incTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.incomeHeaderBg } }
         currentRow++
 
-        // Headers
-        const incHeaderStart = currentRow
-        currentRow = setRowValues(sheet, currentRow,
-          ["Descrição", "Tipo", "Vencimento", "Esperado", "Recebido", null, null],
-          { isHeader: true, fill: COLORS.incomeHeaderBg }
+        const incHeaderRow = currentRow
+        const incRows = periodIncomes.map((inc) => [
+          inc.description,
+          inc.isFixed ? "Fixa" : "Variável",
+          inc.dueDate ? formatShortDate(inc.dueDate) : "-",
+          inc.expectedAmount,
+          inc.averageAmount ?? null,
+          inc.receivedAmount,
+        ])
+        addFilterableTable(
+          sheet,
+          `Receitas_${plan.year}_${plan.month}_P${p}`,
+          incHeaderRow,
+          ["Descrição", "Tipo", "Vencimento", "Esperado", "Médio", "Recebido"],
+          incRows
         )
+        styleHeaderRow(sheet, incHeaderRow, 6, COLORS.incomeHeaderBg)
 
-        // Data rows
+        // Data row styling
         periodIncomes.forEach((inc, idx) => {
+          const rowNum = incHeaderRow + 1 + idx
           const isReceived = inc.receivedAmount >= inc.expectedAmount
           const fill = !isReceived ? COLORS.pendingIncomeBg : (idx % 2 === 1 ? COLORS.zebra : undefined)
-          currentRow = setRowValues(sheet, currentRow,
-            [
-              inc.description,
-              inc.isFixed ? "Fixa" : "Variável",
-              inc.dueDate ? formatShortDate(inc.dueDate) : "-",
-              inc.expectedAmount,
-              inc.receivedAmount,
-              null,
-              null,
-            ],
-            { fill, isCurrency: [false, false, false, true, true, false, false] }
-          )
+          const row = sheet.getRow(rowNum)
+          for (let c = 1; c <= 6; c++) {
+            const cell = row.getCell(c)
+            applyThinBorder(cell)
+            if (fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } }
+            if (c >= 4) applyCurrencyFormat(cell)
+            if (c === 5) cell.font = { ...cell.font, color: { argb: COLORS.mutedText } }
+          }
         })
+        currentRow = incHeaderRow + 1 + periodIncomes.length
 
-        // Total row
+        // Total row (fora da tabela, para não sumir ao filtrar)
+        const incAverage = periodIncomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
         const totalRow = sheet.getRow(currentRow)
         totalRow.getCell(1).value = "Total"
-        totalRow.getCell(1).font = { bold: true }
         totalRow.getCell(4).value = summary.totalIncome
-        totalRow.getCell(5).value = summary.totalReceived
-        ;[1, 2, 3, 4, 5].forEach((col) => {
-          const cell = totalRow.getCell(col)
-          cell.font = { ...cell.font, bold: true }
-          applyThinBorder(cell)
-          cell.border = {
-            ...cell.border,
-            top: { style: "double", color: { argb: COLORS.border } },
-          }
-          if (col >= 4) applyCurrencyFormat(cell)
-        })
+        totalRow.getCell(5).value = incAverage
+        totalRow.getCell(6).value = summary.totalReceived
+        styleTotalRow(sheet, currentRow, 6, 4)
+        totalRow.getCell(5).font = { bold: true, color: { argb: COLORS.mutedText } }
         currentRow++
 
-        // Auto-filter on income table
-        sheet.autoFilter = {
-          from: { row: incHeaderStart, column: 1 },
-          to: { row: currentRow - 1, column: 5 },
-        }
-
-        currentRow++
+        const incFixed = periodIncomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
+        addBreakdownRow(sheet, currentRow, incFixed, summary.totalIncome - incFixed)
+        currentRow += 2
       }
 
       // --- DESPESAS ---
       if (periodExpenses.length > 0) {
         // Section title
-        sheet.mergeCells(`A${currentRow}:G${currentRow}`)
+        sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
         const expTitle = sheet.getCell(`A${currentRow}`)
         expTitle.value = "DESPESAS"
         expTitle.font = { bold: true, size: 10, color: { argb: COLORS.expenseText } }
         expTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.expenseHeaderBg } }
         currentRow++
 
-        // Headers
-        const expHeaderStart = currentRow
-        currentRow = setRowValues(sheet, currentRow,
-          ["Categoria", "Descrição", "Tipo", "Vencimento", "Valor", "Pago", "Restante"],
-          { isHeader: true, fill: COLORS.expenseHeaderBg }
+        const expHeaderRow = currentRow
+        const expRows = periodExpenses.map((exp) => [
+          exp.category?.name || "-",
+          exp.description,
+          exp.isFixed ? "Fixa" : "Variável",
+          exp.dueDate ? formatShortDate(exp.dueDate) : "-",
+          exp.plannedAmount,
+          exp.averageAmount ?? null,
+          exp.paidAmount,
+          exp.plannedAmount - exp.paidAmount,
+        ])
+        addFilterableTable(
+          sheet,
+          `Despesas_${plan.year}_${plan.month}_P${p}`,
+          expHeaderRow,
+          ["Categoria", "Descrição", "Tipo", "Vencimento", "Valor", "Médio", "Pago", "Restante"],
+          expRows
         )
+        styleHeaderRow(sheet, expHeaderRow, LAST_COL, COLORS.expenseHeaderBg)
 
-        // Data rows
+        // Data row styling
         periodExpenses.forEach((exp, idx) => {
+          const rowNum = expHeaderRow + 1 + idx
           const isPaid = exp.paidAmount >= exp.plannedAmount
           const fill = !isPaid ? COLORS.pendingExpenseBg : (idx % 2 === 1 ? COLORS.zebra : undefined)
-          const catColor = exp.category?.color || undefined
-          currentRow = setRowValues(sheet, currentRow,
-            [
-              exp.category?.name || "-",
-              exp.description,
-              exp.isFixed ? "Fixa" : "Variável",
-              exp.dueDate ? formatShortDate(exp.dueDate) : "-",
-              exp.plannedAmount,
-              exp.paidAmount,
-              exp.plannedAmount - exp.paidAmount,
-            ],
-            { fill, isCurrency: [false, false, false, false, true, true, true], categoryColor: catColor }
-          )
+          const row = sheet.getRow(rowNum)
+          for (let c = 1; c <= LAST_COL; c++) {
+            const cell = row.getCell(c)
+            applyThinBorder(cell)
+            if (fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } }
+            if (c >= 5) applyCurrencyFormat(cell)
+            if (c === 6) cell.font = { ...cell.font, color: { argb: COLORS.mutedText } }
+          }
+          if (exp.category?.color) {
+            const catCell = row.getCell(1)
+            catCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${exp.category.color.replace("#", "")}` } }
+            catCell.font = { ...catCell.font, color: { argb: "FFFFFFFF" }, bold: true }
+          }
         })
+        currentRow = expHeaderRow + 1 + periodExpenses.length
 
-        // Total row
+        // Total row (fora da tabela, para não sumir ao filtrar)
+        const expAverage = periodExpenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
         const totalRow = sheet.getRow(currentRow)
         totalRow.getCell(1).value = "Total"
         totalRow.getCell(5).value = summary.totalExpenses
-        totalRow.getCell(6).value = summary.totalPaid
-        totalRow.getCell(7).value = summary.totalRemaining
-        ;[1, 2, 3, 4, 5, 6, 7].forEach((col) => {
-          const cell = totalRow.getCell(col)
-          cell.font = { ...cell.font, bold: true }
-          applyThinBorder(cell)
-          cell.border = {
-            ...cell.border,
-            top: { style: "double", color: { argb: COLORS.border } },
-          }
-          if (col >= 5) applyCurrencyFormat(cell)
-        })
+        totalRow.getCell(6).value = expAverage
+        totalRow.getCell(7).value = summary.totalPaid
+        totalRow.getCell(8).value = summary.totalRemaining
+        styleTotalRow(sheet, currentRow, LAST_COL, 5)
+        totalRow.getCell(6).font = { bold: true, color: { argb: COLORS.mutedText } }
         currentRow++
 
-        // Auto-filter on expense table
-        sheet.autoFilter = {
-          from: { row: expHeaderStart, column: 1 },
-          to: { row: currentRow - 1, column: 7 },
-        }
-
-        currentRow++
+        const expFixed = periodExpenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
+        addBreakdownRow(sheet, currentRow, expFixed, summary.totalExpenses - expFixed)
+        currentRow += 2
       }
 
       // Period summary row
-      sheet.mergeCells(`A${currentRow}:G${currentRow}`)
+      sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
       const summaryCell = sheet.getCell(`A${currentRow}`)
       summaryCell.value = `Receitas: ${formatCurrency(summary.totalIncome)}  |  Despesas: ${formatCurrency(summary.totalExpenses)}  |  Saldo Projetado: ${formatCurrency(summary.balance)}  |  Saldo Real: ${formatCurrency(summary.realBalance)}`
       summaryCell.font = { bold: true, size: 10 }
@@ -274,10 +307,14 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
     // Month final summary
     const totalPlanned = plan.expenses.reduce((s, e) => s + e.plannedAmount, 0)
     const totalPaid = plan.expenses.reduce((s, e) => s + e.paidAmount, 0)
+    const expenseFixed = plan.expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
+    const expenseAverage = plan.expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
     const totalExpected = plan.incomes.reduce((s, i) => s + i.expectedAmount, 0)
     const totalReceived = plan.incomes.reduce((s, i) => s + i.receivedAmount, 0)
+    const incomeFixed = plan.incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
+    const incomeAverage = plan.incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
-    sheet.mergeCells(`A${currentRow}:G${currentRow}`)
+    sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
     const finalTitle = sheet.getCell(`A${currentRow}`)
     finalTitle.value = "RESUMO FINAL DO MÊS"
     finalTitle.font = { bold: true, size: 12, color: { argb: COLORS.headerText } }
@@ -288,6 +325,9 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
 
     const summaryData = [
       ["Total Receitas", formatCurrency(totalExpected), "Total Despesas", formatCurrency(totalPlanned)],
+      ["Receitas Fixas", formatCurrency(incomeFixed), "Despesas Fixas", formatCurrency(expenseFixed)],
+      ["Receitas Variáveis", formatCurrency(totalExpected - incomeFixed), "Despesas Variáveis", formatCurrency(totalPlanned - expenseFixed)],
+      ["Médio Receitas", formatCurrency(incomeAverage), "Médio Despesas", formatCurrency(expenseAverage)],
       ["Receitas Recebidas", formatCurrency(totalReceived), "Despesas Pagas", formatCurrency(totalPaid)],
       ["Saldo Final Projetado", formatCurrency(entryBalance), "Saldo Final Real", formatCurrency(realEntryBalance)],
     ]

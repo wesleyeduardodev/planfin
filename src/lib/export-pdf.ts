@@ -15,6 +15,7 @@ export interface ExportPlan {
     dueDate: Date | null
     plannedAmount: number
     paidAmount: number
+    averageAmount: number | null
     isFixed: boolean
     category: { name: string; color: string } | null
   }[]
@@ -24,6 +25,7 @@ export interface ExportPlan {
     dueDate: Date | null
     expectedAmount: number
     receivedAmount: number
+    averageAmount: number | null
     isFixed: boolean
   }[]
 }
@@ -33,6 +35,9 @@ const COLORS = {
   green: "#10b981",
   red: "#ef4444",
   amber: "#f59e0b",
+  muted: "#94a3b8",
+  indigo: "#4f46e5",
+  amberDark: "#d97706",
   incomeHeaderBg: "#ecfdf5",
   expenseHeaderBg: "#fef2f2",
   zebra: "#f8fafc",
@@ -122,6 +127,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             { text: "Tipo", style: "tableHeader" },
             { text: "Vencimento", style: "tableHeader" },
             { text: "Esperado", style: "tableHeader", alignment: "right" },
+            { text: "Médio", style: "tableHeader", alignment: "right" },
             { text: "Recebido", style: "tableHeader", alignment: "right" },
           ],
         ]
@@ -135,22 +141,34 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             inc.isFixed ? "Fixa" : "Variável",
             inc.dueDate ? formatShortDate(inc.dueDate) : "-",
             { text: formatCurrency(inc.expectedAmount), alignment: "right" },
+            { text: inc.averageAmount != null ? formatCurrency(inc.averageAmount) : "—", alignment: "right", color: COLORS.muted },
             { text: formatCurrency(inc.receivedAmount), alignment: "right", color: !isReceived ? COLORS.red : undefined },
           ])
         }
 
+        const incomeFixedTotal = periodIncomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
+        const incomeAverageTotal = periodIncomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
         incomeBody.push([
-          { text: "Total", bold: true, colSpan: 3 },
+          {
+            text: [
+              { text: "Total   ", bold: true },
+              { text: `Fixo: ${formatCurrency(incomeFixedTotal)}`, color: COLORS.indigo, fontSize: 8 },
+              { text: "  +  ", color: COLORS.muted, fontSize: 8 },
+              { text: `Variável: ${formatCurrency(summary.totalIncome - incomeFixedTotal)}`, color: COLORS.amberDark, fontSize: 8 },
+            ],
+            colSpan: 3,
+          },
           {},
           {},
           { text: formatCurrency(summary.totalIncome), bold: true, alignment: "right" },
+          { text: formatCurrency(incomeAverageTotal), bold: true, alignment: "right", color: COLORS.muted },
           { text: formatCurrency(summary.totalReceived), bold: true, alignment: "right" },
         ])
 
         content.push({
           table: {
             headerRows: 1,
-            widths: ["*", "auto", "auto", "auto", "auto"],
+            widths: ["*", "auto", "auto", "auto", "auto", "auto"],
             body: incomeBody,
           },
           layout: {
@@ -188,6 +206,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             { text: "Tipo", style: "tableHeader" },
             { text: "Vencimento", style: "tableHeader" },
             { text: "Valor", style: "tableHeader", alignment: "right" },
+            { text: "Médio", style: "tableHeader", alignment: "right" },
             { text: "Pago", style: "tableHeader", alignment: "right" },
           ],
         ]
@@ -202,23 +221,35 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             exp.isFixed ? "Fixa" : "Variável",
             exp.dueDate ? formatShortDate(exp.dueDate) : "-",
             { text: formatCurrency(exp.plannedAmount), alignment: "right" },
+            { text: exp.averageAmount != null ? formatCurrency(exp.averageAmount) : "—", alignment: "right", color: COLORS.muted },
             { text: formatCurrency(exp.paidAmount), alignment: "right", color: !isPaid ? COLORS.red : undefined },
           ])
         }
 
+        const expenseFixedTotal = periodExpenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
+        const expenseAverageTotal = periodExpenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
         expenseBody.push([
-          { text: "Total", bold: true, colSpan: 4 },
+          {
+            text: [
+              { text: "Total   ", bold: true },
+              { text: `Fixo: ${formatCurrency(expenseFixedTotal)}`, color: COLORS.indigo, fontSize: 8 },
+              { text: "  +  ", color: COLORS.muted, fontSize: 8 },
+              { text: `Variável: ${formatCurrency(summary.totalExpenses - expenseFixedTotal)}`, color: COLORS.amberDark, fontSize: 8 },
+            ],
+            colSpan: 4,
+          },
           {},
           {},
           {},
           { text: formatCurrency(summary.totalExpenses), bold: true, alignment: "right" },
+          { text: formatCurrency(expenseAverageTotal), bold: true, alignment: "right", color: COLORS.muted },
           { text: formatCurrency(summary.totalPaid), bold: true, alignment: "right" },
         ])
 
         content.push({
           table: {
             headerRows: 1,
-            widths: ["auto", "*", "auto", "auto", "auto", "auto"],
+            widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto"],
             body: expenseBody,
           },
           layout: {
@@ -264,6 +295,10 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
     // Month summary
     const totalPlanned = plan.expenses.reduce((s, e) => s + e.plannedAmount, 0)
     const totalExpected = plan.incomes.reduce((s, i) => s + i.expectedAmount, 0)
+    const monthExpenseFixed = plan.expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
+    const monthExpenseAverage = plan.expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+    const monthIncomeFixed = plan.incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
+    const monthIncomeAverage = plan.incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
     content.push({
       canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: COLORS.header }],
@@ -278,6 +313,18 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
     } as Content)
     content.push({
       text: `Total Receitas: ${formatCurrency(totalExpected)}  |  Total Despesas: ${formatCurrency(totalPlanned)}`,
+      margin: [0, 2, 0, 2],
+    } as Content)
+    content.push({
+      text: `Receitas — Fixo: ${formatCurrency(monthIncomeFixed)}  |  Variável: ${formatCurrency(totalExpected - monthIncomeFixed)}  |  Médio: ${formatCurrency(monthIncomeAverage)}`,
+      fontSize: 8,
+      color: "#475569",
+      margin: [0, 2, 0, 2],
+    } as Content)
+    content.push({
+      text: `Despesas — Fixo: ${formatCurrency(monthExpenseFixed)}  |  Variável: ${formatCurrency(totalPlanned - monthExpenseFixed)}  |  Médio: ${formatCurrency(monthExpenseAverage)}`,
+      fontSize: 8,
+      color: "#475569",
       margin: [0, 2, 0, 2],
     } as Content)
     content.push({
