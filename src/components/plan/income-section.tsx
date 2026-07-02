@@ -312,6 +312,19 @@ export function IncomeSection({
 
   const totalExpected = incomes.reduce((s, i) => s + i.expectedAmount, 0)
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
+  const totalFixed = incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
+  const totalVariable = totalExpected - totalFixed
+
+  const fixedVariableBreakdown = (
+    <span className="flex items-center gap-3 text-xs font-semibold whitespace-nowrap">
+      <span className="text-indigo-600 dark:text-indigo-400">
+        Fixo: <span className="font-mono">{formatCurrency(totalFixed)}</span>
+      </span>
+      <span className="text-amber-600 dark:text-amber-400">
+        Variável: <span className="font-mono">{formatCurrency(totalVariable)}</span>
+      </span>
+    </span>
+  )
 
   const sortLabels: Record<SortKey, string> = {
     description: "Descrição",
@@ -457,13 +470,18 @@ export function IncomeSection({
                   </div>
                 )
               })}
-              <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3 flex items-center justify-between text-sm font-semibold">
-                <span>Total</span>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono">{formatCurrency(totalExpected)}</span>
-                  {totalReceived > 0 && (
-                    <span className="font-mono text-emerald-600">{formatCurrency(totalReceived)}</span>
-                  )}
+              <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3">
+                <div className="flex items-center justify-between text-sm font-semibold">
+                  <span>Total</span>
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono">{formatCurrency(totalExpected)}</span>
+                    {totalReceived > 0 && (
+                      <span className="font-mono text-emerald-600">{formatCurrency(totalReceived)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t">
+                  {fixedVariableBreakdown}
                 </div>
               </div>
             </>
@@ -591,7 +609,12 @@ export function IncomeSection({
             )}
             {incomes.length > 0 && (
               <TableRow className="bg-emerald-50/80 dark:bg-emerald-950/20 font-bold border-t-2 border-emerald-200 dark:border-emerald-900">
-                <TableCell colSpan={3} className="text-base">Total</TableCell>
+                <TableCell colSpan={3} className="text-base">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span>Total</span>
+                    {fixedVariableBreakdown}
+                  </div>
+                </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalExpected)}
                 </TableCell>

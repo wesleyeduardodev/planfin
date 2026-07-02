@@ -33,6 +33,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { PeriodPanel } from "@/components/plan/period-panel"
 import { IncomeSection } from "@/components/plan/income-section"
 import { PeriodSummary } from "@/components/plan/period-summary"
+import { MonthSummary } from "@/components/plan/month-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
@@ -634,6 +635,7 @@ export default function PlanejamentoPage({
                 />
               </div>
             ))}
+            <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
           </div>
 
           {/* Mobile: Tabs */}
@@ -739,6 +741,9 @@ export default function PlanejamentoPage({
                 </TabsContent>
               ))}
             </Tabs>
+            <div className="mt-4">
+              <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
+            </div>
           </div>
 
           {/* Dialogs */}
