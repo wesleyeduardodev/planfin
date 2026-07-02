@@ -266,13 +266,16 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
   const totalVariable = totalPlanned - totalFixed
 
   const fixedVariableBreakdown = (
-    <span className="flex items-center gap-3 text-xs font-semibold whitespace-nowrap">
+    <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
       <span className="text-indigo-600 dark:text-indigo-400">
         Fixo: <span className="font-mono">{formatCurrency(totalFixed)}</span>
       </span>
+      <span className="text-muted-foreground font-normal">+</span>
       <span className="text-amber-600 dark:text-amber-400">
         Variável: <span className="font-mono">{formatCurrency(totalVariable)}</span>
       </span>
+      <span className="text-muted-foreground font-normal">=</span>
+      <span className="font-mono">{formatCurrency(totalPlanned)}</span>
     </span>
   )
 
@@ -734,11 +737,8 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
             {/* Totals row */}
             {expenses.length > 0 && (
               <TableRow className="bg-red-50/80 dark:bg-red-950/20 font-bold border-t-2 border-red-200 dark:border-red-900">
-                <TableCell colSpan={3} className="text-base">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <span>Total</span>
-                    {fixedVariableBreakdown}
-                  </div>
+                <TableCell colSpan={3}>
+                  {fixedVariableBreakdown}
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPlanned)}
