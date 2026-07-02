@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -371,16 +371,33 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
       )
     }
     return (
-      <button
-        className={cn(
-          "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-          field === "paid" && isPaid && "text-emerald-600",
-          field === "average" && "text-muted-foreground"
+      <span className="inline-flex items-center gap-1">
+        {field === "average" && (
+          <button
+            className={cn(
+              "text-muted-foreground/60 hover:text-foreground cursor-pointer",
+              value != null && "opacity-0 group-hover:opacity-100 max-sm:opacity-100"
+            )}
+            onClick={() =>
+              updateMutation.mutate({ id: exp.id, data: { averageAmount: exp.plannedAmount } })
+            }
+            title="Copiar Valor para Médio"
+            aria-label="Copiar Valor para Médio"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
         )}
-        onClick={() => startEdit(exp, field)}
-      >
-        {value != null ? formatCurrency(value) : "—"}
-      </button>
+        <button
+          className={cn(
+            "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
+            field === "paid" && isPaid && "text-emerald-600",
+            field === "average" && "text-muted-foreground"
+          )}
+          onClick={() => startEdit(exp, field)}
+        >
+          {value != null ? formatCurrency(value) : "—"}
+        </button>
+      </span>
     )
   }
 
@@ -647,6 +664,7 @@ export function PeriodPanel({ expenses, period, periodCount, year, month, onAddE
                   <TableRow
                     key={exp.id}
                     className={cn(
+                      "group",
                       isPaid ? "bg-muted/30 opacity-50" : "bg-red-50/50 dark:bg-red-950/15"
                     )}
                   >

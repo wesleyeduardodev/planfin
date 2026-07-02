@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -268,16 +268,33 @@ export function IncomeSection({
       )
     }
     return (
-      <button
-        className={cn(
-          "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
-          field === "received" && isReceived && "text-emerald-600",
-          field === "average" && "text-muted-foreground"
+      <span className="inline-flex items-center gap-1">
+        {field === "average" && (
+          <button
+            className={cn(
+              "text-muted-foreground/60 hover:text-foreground cursor-pointer",
+              value != null && "opacity-0 group-hover:opacity-100 max-sm:opacity-100"
+            )}
+            onClick={() =>
+              updateMutation.mutate({ id: inc.id, data: { averageAmount: inc.expectedAmount } })
+            }
+            title="Copiar Esperado para Médio"
+            aria-label="Copiar Esperado para Médio"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
         )}
-        onClick={() => startEdit(inc, field)}
-      >
-        {value != null ? formatCurrency(value) : "—"}
-      </button>
+        <button
+          className={cn(
+            "font-mono text-sm hover:bg-muted px-1 rounded cursor-pointer",
+            field === "received" && isReceived && "text-emerald-600",
+            field === "average" && "text-muted-foreground"
+          )}
+          onClick={() => startEdit(inc, field)}
+        >
+          {value != null ? formatCurrency(value) : "—"}
+        </button>
+      </span>
     )
   }
 
@@ -555,6 +572,7 @@ export function IncomeSection({
 
                 return (
                   <TableRow key={inc.id} className={cn(
+                    "group",
                     isReceived ? "opacity-50" : "bg-amber-50/50 dark:bg-amber-950/15"
                   )}>
                     <TableCell className={cn("text-sm", !isReceived && "border-l-3 border-l-amber-400")}>
