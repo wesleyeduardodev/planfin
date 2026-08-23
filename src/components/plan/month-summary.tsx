@@ -29,7 +29,7 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
       <CardContent className="pt-4 pb-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Coluna: Despesas */}
-          <div className="space-y-2 text-sm">
+          <div className="flex flex-col gap-2 text-sm">
             <span className="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
               Despesas
             </span>
@@ -65,7 +65,7 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
                 </span>
               </div>
             </div>
-            <div className="border-t-2 pt-3 mt-3 border-red-200 dark:border-red-900">
+            <div className="border-t-2 pt-3 mt-auto border-red-200 dark:border-red-900">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-base">Total</span>
                 <span className="font-mono font-bold text-xl text-red-500">
@@ -76,7 +76,7 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
           </div>
 
           {/* Coluna: Receitas */}
-          <div className="space-y-2 text-sm sm:border-l sm:pl-6">
+          <div className="flex flex-col gap-2 text-sm sm:border-l sm:pl-6">
             <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
               Receitas
             </span>
@@ -98,7 +98,7 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
                 {formatCurrency(incomeAverage)}
               </span>
             </div>
-            <div className="border-t-2 pt-3 mt-3 border-emerald-200 dark:border-emerald-900">
+            <div className="border-t-2 pt-3 mt-auto border-emerald-200 dark:border-emerald-900">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-base">Total</span>
                 <span className="font-mono font-bold text-xl text-emerald-600">
