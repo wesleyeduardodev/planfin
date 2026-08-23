@@ -24,6 +24,13 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  if (!active) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+  return dir === "asc"
+    ? <ArrowUp className="h-3 w-3 text-foreground" />
+    : <ArrowDown className="h-3 w-3 text-foreground" />
+}
+
 interface PlanExpense {
   id: string
   period: number
@@ -113,13 +120,6 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
       return sortDir === "asc" ? cmp : -cmp
     })
   }, [expenses, sortKey, sortDir])
-
-  function SortIcon({ column }: { column: SortKey }) {
-    if (sortKey !== column) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-    return sortDir === "asc"
-      ? <ArrowUp className="h-3 w-3 text-foreground" />
-      : <ArrowDown className="h-3 w-3 text-foreground" />
-  }
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
@@ -333,7 +333,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   const totalCash = totalPlanned - totalCard
 
   const paymentBreakdown = (
-    <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-semibold">
       <span className="text-emerald-600 dark:text-emerald-400">
         Dinheiro: <span className="font-mono">{formatCurrency(totalCash)}</span>
       </span>
@@ -345,7 +345,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   )
 
   const fixedVariableBreakdown = (
-    <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-semibold">
       <span className="text-indigo-600 dark:text-indigo-400">
         Fixo: <span className="font-mono">{formatCurrency(totalFixed)}</span>
       </span>
@@ -508,15 +508,18 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   }
 
   const sortBar = (
-    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto">
+    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto bg-muted/30">
+      <span className="flex items-center gap-1 text-[11px] text-muted-foreground mr-1 shrink-0">
+        <ArrowUpDown className="h-3 w-3" /> Ordenar:
+      </span>
       {(Object.keys(sortLabels) as SortKey[]).map((key) => (
         <button
           key={key}
           className={cn(
-            "flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border whitespace-nowrap cursor-pointer",
+            "flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border whitespace-nowrap cursor-pointer",
             sortKey === key
               ? "bg-primary text-primary-foreground border-primary"
-              : "text-muted-foreground hover:bg-muted border-transparent"
+              : "text-muted-foreground bg-background hover:bg-muted border-border"
           )}
           onClick={() => toggleSort(key)}
         >
@@ -609,8 +612,8 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                   </div>
 
                   {/* Row 2: badge + date + actions */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
                       {exp.isFixed ? (
                         <Badge variant="outline" className="text-[10px] font-semibold shrink-0 cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50" onClick={() => setToggleFixedTarget(exp)}>Fixo</Badge>
                       ) : (
@@ -621,7 +624,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                         {renderDateEditor(exp)}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0 ml-auto">
                       {periodCount > 1 && period > 1 && (
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ expense: exp, direction: -1 })} aria-label="Mover para período anterior">
                           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
@@ -651,20 +654,20 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                   </div>
 
                   {/* Row 3: values */}
-                  <div className="flex items-center justify-between gap-3 pt-1 border-t">
-                    <div className="text-left">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2 border-t text-[13px] [&_.font-mono]:text-[13px] [&_.font-mono]:px-0">
+                    <div className="min-w-0">
                       <span className="text-muted-foreground text-xs block">Valor</span>
                       {renderCurrencyEditor(exp, "planned")}
                     </div>
-                    <div className="text-center">
+                    <div className="min-w-0 text-right">
                       <span className="text-muted-foreground text-xs block">Médio</span>
                       {renderCurrencyEditor(exp, "average")}
                     </div>
-                    <div className="text-center">
+                    <div className="min-w-0">
                       <span className="text-muted-foreground text-xs block">Pago</span>
                       {renderCurrencyEditor(exp, "paid")}
                     </div>
-                    <div className="text-right">
+                    <div className="min-w-0 text-right">
                       <span className={cn("text-xs block", remaining > 0 ? "text-amber-600" : "text-emerald-600")}>Restante</span>
                       <span className={cn("font-mono text-sm", remaining > 0 ? "text-amber-600" : "text-emerald-600")}>
                         {formatCurrency(remaining)}
@@ -716,14 +719,14 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon column="description" /></button></TableHead>
-              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
-              <TableHead className="w-24"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("payment")}>Pgto. <SortIcon column="payment" /></button></TableHead>
-              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("planned")}>Valor <SortIcon column="planned" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon column="average" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("paid")}>Pago <SortIcon column="paid" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("remaining")}>Restante <SortIcon column="remaining" /></button></TableHead>
+              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon active={sortKey === "description"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon active={sortKey === "type"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-24"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("payment")}>Pgto. <SortIcon active={sortKey === "payment"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon active={sortKey === "date"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("planned")}>Valor <SortIcon active={sortKey === "planned"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon active={sortKey === "average"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("paid")}>Pago <SortIcon active={sortKey === "paid"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("remaining")}>Restante <SortIcon active={sortKey === "remaining"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>

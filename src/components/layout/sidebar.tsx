@@ -81,7 +81,7 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
         )}
       >
         {/* Logo */}
-        <div className={cn("flex h-16 items-center justify-between px-5", collapsed && "lg:px-0 lg:justify-center")}>
+        <div className={cn("flex h-16 items-center justify-between px-5 pt-[env(safe-area-inset-top)] box-content", collapsed && "lg:px-0 lg:justify-center")}>
           <Link href="/" className="flex items-center gap-2.5" onClick={onClose} title="PlanFin">
             <PlanFinLogo className="w-8 h-8 shrink-0" />
             <span className={cn("font-bold text-lg tracking-tight text-sidebar-foreground", collapsed && "lg:hidden")}>
@@ -126,7 +126,7 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
         </nav>
 
         {/* Collapse toggle (desktop) + Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-sidebar-accent/30 space-y-0.5">
+        <div className="absolute bottom-0 left-0 right-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-sidebar-accent/30 space-y-0.5">
           <button
             onClick={onToggleCollapse}
             title={collapsed ? "Expandir menu" : "Recolher menu"}

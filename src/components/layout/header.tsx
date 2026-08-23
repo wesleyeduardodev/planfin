@@ -25,7 +25,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     .toUpperCase() || "U"
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 lg:px-6 pt-[env(safe-area-inset-top)] box-content">
       <Button
         variant="ghost"
         size="icon"

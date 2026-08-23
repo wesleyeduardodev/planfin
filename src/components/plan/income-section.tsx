@@ -18,6 +18,13 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  if (!active) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+  return dir === "asc"
+    ? <ArrowUp className="h-3 w-3 text-foreground" />
+    : <ArrowDown className="h-3 w-3 text-foreground" />
+}
+
 interface PlanIncome {
   id: string
   period: number
@@ -98,13 +105,6 @@ export function IncomeSection({
       return sortDir === "asc" ? cmp : -cmp
     })
   }, [incomes, sortKey, sortDir])
-
-  function SortIcon({ column }: { column: SortKey }) {
-    if (sortKey !== column) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-    return sortDir === "asc"
-      ? <ArrowUp className="h-3 w-3 text-foreground" />
-      : <ArrowDown className="h-3 w-3 text-foreground" />
-  }
 
   const updateMutation = useMutation({
     mutationFn: async ({
@@ -375,7 +375,7 @@ export function IncomeSection({
   const totalAverage = incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
   const fixedVariableBreakdown = (
-    <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-semibold">
       <span className="text-indigo-600 dark:text-indigo-400">
         Fixo: <span className="font-mono">{formatCurrency(totalFixed)}</span>
       </span>
@@ -398,15 +398,18 @@ export function IncomeSection({
   }
 
   const sortBar = (
-    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto">
+    <div className="flex items-center gap-1 px-3 py-1.5 border-b overflow-x-auto bg-muted/30">
+      <span className="flex items-center gap-1 text-[11px] text-muted-foreground mr-1 shrink-0">
+        <ArrowUpDown className="h-3 w-3" /> Ordenar:
+      </span>
       {(Object.keys(sortLabels) as SortKey[]).map((key) => (
         <button
           key={key}
           className={cn(
-            "flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border whitespace-nowrap cursor-pointer",
+            "flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border whitespace-nowrap cursor-pointer",
             sortKey === key
               ? "bg-primary text-primary-foreground border-primary"
-              : "text-muted-foreground hover:bg-muted border-transparent"
+              : "text-muted-foreground bg-background hover:bg-muted border-border"
           )}
           onClick={() => toggleSort(key)}
         >
@@ -496,14 +499,14 @@ export function IncomeSection({
                     </div>
 
                     {/* Row 2: badge + date + actions */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
                         {renderTypeBadge(inc)}
                         <div className="text-xs text-muted-foreground">
                           {renderDateEditor(inc)}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0 ml-auto">
                         {periodCount > 1 && period > 1 && (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMovePeriodTarget({ income: inc, direction: -1 })} aria-label="Mover para período anterior">
                             <ChevronLeft className="h-4 w-4 text-muted-foreground" />
@@ -533,16 +536,16 @@ export function IncomeSection({
                     </div>
 
                     {/* Row 3: values */}
-                    <div className="flex items-center justify-between gap-3 pt-1 border-t">
-                      <div className="text-left">
+                    <div className="grid grid-cols-3 gap-x-2 pt-2 border-t [&_.font-mono]:text-[13px] [&_.font-mono]:px-0">
+                      <div className="min-w-0 text-left">
                         <span className="text-muted-foreground text-xs block">Esperado</span>
                         {renderCurrencyEditor(inc, "expected")}
                       </div>
-                      <div className="text-center">
+                      <div className="min-w-0 text-center">
                         <span className="text-muted-foreground text-xs block">Médio</span>
                         {renderCurrencyEditor(inc, "average")}
                       </div>
-                      <div className="text-right">
+                      <div className="min-w-0 text-right">
                         <span className="text-muted-foreground text-xs block">Recebido</span>
                         {renderCurrencyEditor(inc, "received")}
                       </div>
@@ -582,12 +585,12 @@ export function IncomeSection({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon column="description" /></button></TableHead>
-              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
-              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("expected")}>Esperado <SortIcon column="expected" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon column="average" /></button></TableHead>
-              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("received")}>Recebido <SortIcon column="received" /></button></TableHead>
+              <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon active={sortKey === "description"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon active={sortKey === "type"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon active={sortKey === "date"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("expected")}>Esperado <SortIcon active={sortKey === "expected"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon active={sortKey === "average"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("received")}>Recebido <SortIcon active={sortKey === "received"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>

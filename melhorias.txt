@@ -1,0 +1,13 @@
+- Tem uma coisa importante que gostaria de fazer, nem sempre eu tenho tempo de está cadastrando entradas e despesa no dia a dia..
+
+e voce sabe que no resumo de cada periodo temos o campo de Saldo, que é como se refletisse o saldo atual que tenho em conta,
+
+mas como estou dizendo as vezes fica desincronizado pois as vezes tenho entrada e despesas que esqueço de anotar ou nao tenho tempo.
+
+entao eu queria fazer o seguinte, um botão de alinahamento de saldo em conta ou algo nesse sentido, onde eu informo a data e o saldo que de fato tem na minha conta
+
+voce analise em qual periodo essa data esta, e para alinhar o saldo para fiqual igual voce pode cadastrar automaticamente uma entrada ou despesa avulsa de alinhamento de saldo..
+
+veja se consegue entender minha ideial, ai depois de criado automaticamene, eu mesmo poso ir la e alterar a descricao, ai no caso ja entra como entrada recebida ou paga, 
+
+veja o que acha da minha ideia ou se tem alguma sugestao

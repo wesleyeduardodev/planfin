@@ -18,6 +18,7 @@ import {
   Loader2,
   Check,
   RotateCcw,
+  MoreHorizontal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +29,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { PageHeader } from "@/components/shared/page-header"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { PeriodPanel } from "@/components/plan/period-panel"
 import { IncomeSection } from "@/components/plan/income-section"
 import { PeriodSummary } from "@/components/plan/period-summary"
@@ -364,6 +371,13 @@ export default function PlanejamentoPage({
     }
   })
 
+  // KPIs do mês
+  const monthIncome = plan?.incomes.reduce((a, i) => a + i.expectedAmount, 0) ?? 0
+  const monthExpenses = plan?.expenses.reduce((a, e) => a + e.plannedAmount, 0) ?? 0
+  const monthCard = plan?.expenses.reduce((a, e) => a + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0) ?? 0
+  const monthPending = plan?.expenses.reduce((a, e) => a + Math.max(0, e.plannedAmount - e.paidAmount), 0) ?? 0
+  const pendingCount = plan?.expenses.filter((e) => e.plannedAmount - e.paidAmount > 0).length ?? 0
+
   // Saldos em cadeia (projetado + real)
   const summaries = periodData.reduce<ReturnType<typeof calcPeriodSummary>[]>(
     (acc, pd, i) => {
@@ -378,68 +392,78 @@ export default function PlanejamentoPage({
     },
     []
   )
+  const finalBalance = summaries.length ? summaries[summaries.length - 1].balance : 0
 
   return (
     <>
-      <PageHeader
-        title={`${getMonthName(month)} ${year}`}
-        description="Planejamento financeiro mensal"
-        action={
-          <div className="flex items-center justify-between sm:justify-end gap-2">
-            {plan && (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleExport("pdf")}
-                  disabled={exporting !== null}
-                  title="Exportar PDF"
-                >
-                  {exporting === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-red-500" />}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleExport("excel")}
-                  disabled={exporting !== null}
-                  title="Exportar Excel"
-                >
-                  {exporting === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCopyAveragesOpen(true)}
-                  title="Copiar valores para o Médio (todos os períodos)"
-                >
-                  <Copy className="h-4 w-4 text-muted-foreground" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddPeriod}
-                >
-                  <Plus className="mr-1 h-3.5 w-3.5" /> Período
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setDeleteOpen(true)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-            <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigateMonth(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+      {/* Header do mês */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigateMonth(-1)} aria-label="Mês anterior">
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div className="px-1 text-center sm:text-left">
+            <h1 className="text-2xl font-bold tracking-tight leading-tight">{getMonthName(month)} {year}</h1>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              {plan
+                ? `${periodCount} ${periodCount === 1 ? "período" : "períodos"} · ${plan.expenses.length} despesas · ${pendingCount} ${pendingCount === 1 ? "pendente" : "pendentes"}`
+                : "Planejamento financeiro mensal"}
+            </p>
           </div>
-        }
-      />
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigateMonth(1)} aria-label="Próximo mês">
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {plan && (
+          <div className="flex items-center gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={openAddPeriod}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Período
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" aria-label="Mais ações" disabled={exporting !== null}>
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                  <FileText className="mr-2 h-4 w-4 text-red-500" /> Exportar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("excel")}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" /> Exportar Excel
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setCopyAveragesOpen(true)}>
+                  <Copy className="mr-2 h-4 w-4 text-muted-foreground" /> Copiar valores para Médio
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Excluir plano do mês
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+      </div>
+
+      {/* KPIs do mês */}
+      {plan && summaries.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-6">
+          {[
+            { label: "Receitas", value: monthIncome, cls: "text-emerald-600 dark:text-emerald-400" },
+            { label: "Despesas", value: monthExpenses, cls: "text-red-500 dark:text-red-400" },
+            { label: "No cartão", value: monthCard, cls: "text-violet-600 dark:text-violet-400" },
+            { label: "A pagar", value: monthPending, cls: monthPending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground" },
+            { label: "Saldo final", value: finalBalance, cls: finalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400" },
+          ].map((k) => (
+            <div key={k.label} className="rounded-lg border bg-card px-3 py-2.5 last:col-span-2 sm:last:col-span-1">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{k.label}</div>
+              <div className={cn("font-mono text-base sm:text-lg font-bold leading-tight mt-0.5", k.cls)}>{formatCurrency(k.value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
