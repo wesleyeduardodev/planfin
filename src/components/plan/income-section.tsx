@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -61,6 +61,7 @@ export function IncomeSection({
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"expected" | "received" | "average" | "description" | "date">("expected")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [expandedReceived, setExpandedReceived] = useState<Set<string>>(new Set())
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanIncome | null>(null)
   const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ income: PlanIncome; direction: -1 | 1 } | null>(null)
@@ -479,15 +480,42 @@ export function IncomeSection({
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
                 const incRemaining = Math.max(0, inc.expectedAmount - inc.receivedAmount)
 
+                if (isReceived && !expandedReceived.has(inc.id)) {
+                  return (
+                    <button
+                      key={inc.id}
+                      type="button"
+                      onClick={() => setExpandedReceived((s) => new Set(s).add(inc.id))}
+                      className="w-full flex items-center gap-2 rounded-md border border-emerald-200/70 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-emerald-900 px-3 py-2 text-left"
+                    >
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span className="flex-1 min-w-0 truncate text-sm text-muted-foreground line-through">{inc.description}</span>
+                      {inc.isAdjustment && <span className="text-[10px] text-muted-foreground shrink-0">Ajuste</span>}
+                      <span className="font-mono text-sm text-emerald-700 dark:text-emerald-400 shrink-0">{formatCurrency(inc.receivedAmount)}</span>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                    </button>
+                  )
+                }
+
                 return (
                   <div
                     key={inc.id}
                     className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isReceived
-                      ? "opacity-50 border-muted"
+                      ? "border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/15 dark:border-emerald-900"
                       : "border-l-3 border-l-amber-400 border-amber-200 bg-amber-50/60 shadow-sm shadow-amber-100 dark:bg-amber-950/20 dark:border-amber-800 dark:shadow-none"
                   )}>
+                    {isReceived && (
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold -mb-1"
+                        onClick={() => setExpandedReceived((s) => { const n = new Set(s); n.delete(inc.id); return n })}
+                      >
+                        <span className="flex items-center gap-1"><Check className="h-3 w-3" /> Recebido</span>
+                        <span className="text-muted-foreground font-normal">Recolher</span>
+                      </button>
+                    )}
                     {/* Row 1: description */}
                     <div className="min-w-0">
                       {editingId === inc.id && editField === "description" ? (

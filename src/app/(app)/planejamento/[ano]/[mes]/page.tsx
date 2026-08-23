@@ -538,12 +538,12 @@ export default function PlanejamentoPage({
             const isPositive = bal >= 0
             return (
               <div className={cn(
-                "rounded-lg border px-4 py-3 flex items-center justify-between gap-3 mb-6",
+                "rounded-lg border px-4 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-6",
                 isPositive
                   ? "bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
                   : "bg-red-50/80 border-red-200 dark:bg-red-950/20 dark:border-red-800"
               )}>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
                   Saldo de {getMonthName(prevMonth)} {prevYear}
                 </span>
                 {editingBalance ? (
@@ -603,7 +603,7 @@ export default function PlanejamentoPage({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-8 ml-2 bg-background"
+                      className="h-8 ml-2 bg-background max-sm:w-full max-sm:ml-0 max-sm:basis-full"
                       onClick={() => setAlignOpen(true)}
                       title="Informar o saldo real da conta e criar um lançamento de ajuste"
                     >

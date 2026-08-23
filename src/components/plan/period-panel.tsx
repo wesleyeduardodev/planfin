@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy } from "lucide-react"
+import { Check, Trash2, Plus, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Copy, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -68,6 +68,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"planned" | "paid" | "average" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [expandedPaid, setExpandedPaid] = useState<Set<string>>(new Set())
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanExpense | null>(null)
   const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ expense: PlanExpense; direction: -1 | 1 } | null>(null)
@@ -577,16 +578,44 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
               const remaining = exp.plannedAmount - exp.paidAmount
               const isPaid = remaining <= 0
 
+              // Pago e recolhido: linha compacta, toque para expandir
+              if (isPaid && !expandedPaid.has(exp.id)) {
+                return (
+                  <button
+                    key={exp.id}
+                    type="button"
+                    onClick={() => setExpandedPaid((s) => new Set(s).add(exp.id))}
+                    className="w-full flex items-center gap-2 rounded-md border border-emerald-200/70 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-emerald-900 px-3 py-2 text-left"
+                  >
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span className="flex-1 min-w-0 truncate text-sm text-muted-foreground line-through">{exp.description}</span>
+                    {exp.isAdjustment && <span className="text-[10px] text-muted-foreground shrink-0">Ajuste</span>}
+                    <span className="font-mono text-sm text-emerald-700 dark:text-emerald-400 shrink-0">{formatCurrency(exp.paidAmount)}</span>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                  </button>
+                )
+              }
+
               return (
                 <div
                   key={exp.id}
                   className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isPaid
-                      ? "opacity-50 border-muted"
+                      ? "border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/15 dark:border-emerald-900"
                       : "border-l-3 border-l-red-400 border-red-200 bg-red-50/60 shadow-sm shadow-red-100 dark:bg-red-950/20 dark:border-red-800 dark:shadow-none"
                   )}
                 >
+                  {isPaid && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold -mb-1"
+                      onClick={() => setExpandedPaid((s) => { const n = new Set(s); n.delete(exp.id); return n })}
+                    >
+                      <span className="flex items-center gap-1"><Check className="h-3 w-3" /> Pago</span>
+                      <span className="text-muted-foreground font-normal">Recolher</span>
+                    </button>
+                  )}
                   {/* Row 1: category dot + description */}
                   <div className="flex items-start gap-2 relative min-w-0">
                     {renderCategoryDropdown(exp)}
