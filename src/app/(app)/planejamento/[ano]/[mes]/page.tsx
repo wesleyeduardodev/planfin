@@ -379,11 +379,11 @@ export default function PlanejamentoPage({
     <>
       {/* Header do mês */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center sm:justify-start gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigateMonth(-1)} aria-label="Mês anterior">
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div className="px-1 text-center sm:text-left">
+          <div className="px-1 text-center sm:text-left flex-1 sm:flex-none">
             <h1 className="text-2xl font-bold tracking-tight leading-tight">{getMonthName(month)} {year}</h1>
             <p className="text-muted-foreground text-xs mt-0.5">
               {plan
