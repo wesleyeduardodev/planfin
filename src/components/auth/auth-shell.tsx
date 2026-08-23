@@ -77,7 +77,7 @@ interface AuthShellProps {
 
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
-    <div className="min-h-[100dvh] flex flex-col lg:grid lg:grid-cols-[1.1fr_1fr] bg-background">
+    <div className="min-h-[100svh] lg:min-h-[100dvh] flex flex-col lg:grid lg:grid-cols-[1.1fr_1fr] bg-background">
       {/* Mobile: hero compacto */}
       <header className="relative lg:hidden overflow-hidden bg-[#0b1220] text-white px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-16">
         <Glow />
@@ -132,7 +132,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       </aside>
 
       {/* Formulário */}
-      <main className="relative flex-1 flex items-start lg:items-center justify-center px-4 pb-10 sm:px-8 lg:py-10 -mt-8 lg:mt-0">
+      <main className="relative flex-1 flex items-start lg:items-center justify-center px-4 pb-6 sm:px-8 lg:py-10 -mt-8 lg:mt-0">
         <div className="w-full max-w-[400px] rounded-2xl bg-card border shadow-xl shadow-black/10 p-6 sm:p-7 lg:p-0 lg:rounded-none lg:bg-transparent lg:border-0 lg:shadow-none">
           <div className="mb-7">
             <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight">{title}</h1>
@@ -146,7 +146,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       </main>
 
       {/* Mobile: faixa de rodapé escura, igual ao hero */}
-      <footer className="lg:hidden bg-[#0b1220] px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between text-[11px] text-white/35">
+      <footer className="lg:hidden mt-auto bg-[#0b1220] px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between text-[11px] text-white/35">
         <span>© {new Date().getFullYear()} PlanFin</span>
         <DevelopedBy tone="dark" />
       </footer>
