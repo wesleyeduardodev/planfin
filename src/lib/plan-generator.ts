@@ -133,9 +133,10 @@ export async function copyMonthlyPlan(
   })
 
   // Filter expenses
-  const expensesToCopy = onlyFixed
-    ? prevPlan.expenses.filter((e) => e.isFixed)
-    : prevPlan.expenses
+  // Ajustes de saldo nunca são copiados para o mês seguinte
+  const expensesToCopy = prevPlan.expenses.filter(
+    (e) => !e.isAdjustment && (!onlyFixed || e.isFixed)
+  )
 
   for (const e of expensesToCopy) {
     await prisma.planExpense.create({
@@ -155,9 +156,9 @@ export async function copyMonthlyPlan(
   }
 
   // Filter incomes
-  const incomesToCopy = onlyFixed
-    ? prevPlan.incomes.filter((i) => i.isFixed)
-    : prevPlan.incomes
+  const incomesToCopy = prevPlan.incomes.filter(
+    (i) => !i.isAdjustment && (!onlyFixed || i.isFixed)
+  )
 
   for (const i of incomesToCopy) {
     await prisma.planIncome.create({

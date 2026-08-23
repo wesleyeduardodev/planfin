@@ -34,6 +34,7 @@ interface PlanIncome {
   averageAmount: number | null
   dueDate: string | null
   isFixed: boolean
+  isAdjustment: boolean
 }
 
 interface IncomeSectionProps {
@@ -350,7 +351,7 @@ export function IncomeSection({
   }
 
   function renderTypeBadge(inc: PlanIncome) {
-    return inc.isFixed ? (
+    const typeBadge = inc.isFixed ? (
       <Badge
         variant="outline"
         className="text-[10px] font-semibold cursor-pointer text-indigo-600 border-indigo-300 bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:bg-indigo-950/50"
@@ -365,6 +366,13 @@ export function IncomeSection({
       >
         Variável
       </Badge>
+    )
+    if (!inc.isAdjustment) return typeBadge
+    return (
+      <span className="inline-flex items-center gap-1">
+        {typeBadge}
+        <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-slate-600 border-slate-300 bg-slate-100 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800" title="Lançamento criado pelo alinhamento de saldo">Ajuste</Badge>
+      </span>
     )
   }
 

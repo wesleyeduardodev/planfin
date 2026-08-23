@@ -11,3 +11,7 @@ voce analise em qual periodo essa data esta, e para alinhar o saldo para fiqual 
 veja se consegue entender minha ideial, ai depois de criado automaticamene, eu mesmo poso ir la e alterar a descricao, ai no caso ja entra como entrada recebida ou paga, 
 
 veja o que acha da minha ideia ou se tem alguma sugestao
+
+
+
+nas tebelas de despesas temos a coluna restante, na de entrada nao tem, temos que colocar ai tambem...

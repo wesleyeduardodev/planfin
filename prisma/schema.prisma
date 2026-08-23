@@ -77,6 +77,7 @@ model PlanExpense {
   averageAmount      Float?    @map("average_amount")
   isFixed    Boolean @default(true) @map("is_fixed")
   paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  isAdjustment  Boolean       @default(false) @map("is_adjustment")
   categoryId String? @map("category_id")
 
   plan     MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -100,6 +101,7 @@ model PlanIncome {
   averageAmount  Float?    @map("average_amount")
   dueDate        DateTime? @map("due_date")
   isFixed Boolean @default(true) @map("is_fixed")
+  isAdjustment Boolean @default(false) @map("is_adjustment")
 
   plan MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 

@@ -19,6 +19,7 @@ import {
   Check,
   RotateCcw,
   MoreHorizontal,
+  Scale,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,6 +42,7 @@ import { IncomeSection } from "@/components/plan/income-section"
 import { PeriodSummary } from "@/components/plan/period-summary"
 import { MonthSummary } from "@/components/plan/month-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
+import { AlignBalanceDialog } from "@/components/plan/align-balance-dialog"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { CurrencyInput } from "@/components/shared/currency-input"
@@ -59,6 +61,7 @@ interface PlanExpense {
   averageAmount: number | null
   isFixed: boolean
   paymentMethod: "CASH" | "CARD"
+  isAdjustment: boolean
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
 }
@@ -72,6 +75,7 @@ interface PlanIncome {
   averageAmount: number | null
   dueDate: string | null
   isFixed: boolean
+  isAdjustment: boolean
 }
 
 interface MonthlyPlan {
@@ -104,6 +108,7 @@ export default function PlanejamentoPage({
   const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [deletePeriod, setDeletePeriod] = useState<number | null>(null)
   const [addPeriodOpen, setAddPeriodOpen] = useState(false)
+  const [alignOpen, setAlignOpen] = useState(false)
   const [newPeriodDay, setNewPeriodDay] = useState(15)
 
   const { data: plan, isLoading } = useQuery<MonthlyPlan | null>({
@@ -589,6 +594,16 @@ export default function PlanejamentoPage({
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 ml-2 bg-background"
+                      onClick={() => setAlignOpen(true)}
+                      title="Informar o saldo real da conta e criar um lançamento de ajuste"
+                    >
+                      <Scale className="mr-1.5 h-3.5 w-3.5" /> Alinhar saldo
+                    </Button>
                   </div>
                 )}
               </div>
@@ -793,6 +808,13 @@ export default function PlanejamentoPage({
           </div>
 
           {/* Dialogs */}
+          <AlignBalanceDialog
+            open={alignOpen}
+            onOpenChange={setAlignOpen}
+            planId={plan.id}
+            year={year}
+            month={month}
+          />
           <AddExpenseDialog
             open={addExpenseOpen}
             onOpenChange={setAddExpenseOpen}

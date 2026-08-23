@@ -41,6 +41,7 @@ interface PlanExpense {
   averageAmount: number | null
   isFixed: boolean
   paymentMethod: "CASH" | "CARD"
+  isAdjustment: boolean
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
 }
@@ -620,6 +621,9 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                         <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
                       {renderPaymentBadge(exp)}
+                      {exp.isAdjustment && (
+                        <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-slate-600 border-slate-300 bg-slate-100 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800" title="Lançamento criado pelo alinhamento de saldo">Ajuste</Badge>
+                      )}
                       <div className="text-xs text-muted-foreground">
                         {renderDateEditor(exp)}
                       </div>
@@ -793,7 +797,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{renderPaymentBadge(exp)}</TableCell>
+                    <TableCell><div className="flex items-center gap-1">{renderPaymentBadge(exp)}{exp.isAdjustment && (  <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-slate-600 border-slate-300 bg-slate-100 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800" title="Lançamento criado pelo alinhamento de saldo">Ajuste</Badge>)}</div></TableCell>
                     <TableCell>
                       {renderDateEditor(exp)}
                     </TableCell>
