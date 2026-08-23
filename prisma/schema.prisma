@@ -37,6 +37,10 @@ model Settings {
   remindExpenses   Boolean @default(true)  @map("remind_expenses")
   remindIncomes    Boolean @default(true)  @map("remind_incomes")
 
+  // Preferências de interface
+  themePreference String  @default("system") @map("theme_preference") // light | dark | system
+  swipeActions    Boolean @default(true)     @map("swipe_actions")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("settings")

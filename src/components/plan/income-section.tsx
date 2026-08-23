@@ -17,6 +17,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { SwipeCard } from "@/components/shared/swipe-card"
 import { DateRangeFilter } from "@/components/shared/date-range-filter"
 import { type DateRange, EMPTY_RANGE, isRangeActive, matchesRange } from "@/lib/date-filter"
 
@@ -520,8 +521,14 @@ export function IncomeSection({
                 }
 
                 return (
-                  <div
+                  <SwipeCard
                     key={inc.id}
+                    onSwipeRight={!isReceived ? () => receiveFull(inc) : undefined}
+                    rightLabel="Receber"
+                    onSwipeLeft={() => setDeleteId(inc.id)}
+                    leftLabel="Excluir"
+                  >
+                  <div
                     className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isReceived
@@ -582,8 +589,8 @@ export function IncomeSection({
                           </Button>
                         )}
                         {!isReceived ? (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => receiveFull(inc)} aria-label="Marcar como recebido">
-                            <Check className="h-4 w-4 text-emerald-600" />
+                          <Button size="sm" className="h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => receiveFull(inc)} aria-label="Marcar como recebido">
+                            <Check className="h-3.5 w-3.5 mr-1" /> Receber
                           </Button>
                         ) : (
                           <>
@@ -621,6 +628,7 @@ export function IncomeSection({
                       </div>
                     </div>
                   </div>
+                  </SwipeCard>
                 )
               })}
               <div className="rounded-lg bg-emerald-50/30 dark:bg-emerald-950/10 p-3">

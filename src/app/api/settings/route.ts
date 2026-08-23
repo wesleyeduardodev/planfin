@@ -103,6 +103,8 @@ export async function PATCH(request: Request) {
       remindExpenses?: boolean
       remindIncomes?: boolean
       remindersEnabled?: boolean
+      themePreference?: string
+      swipeActions?: boolean
     } = {}
 
     const hour = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 23 ? (v as number) : undefined
@@ -119,6 +121,8 @@ export async function PATCH(request: Request) {
     if (typeof data.remindExpenses === "boolean") update.remindExpenses = data.remindExpenses
     if (typeof data.remindIncomes === "boolean") update.remindIncomes = data.remindIncomes
     if (typeof data.remindersEnabled === "boolean") update.remindersEnabled = data.remindersEnabled
+    if (["light", "dark", "system"].includes(data.themePreference)) update.themePreference = data.themePreference
+    if (typeof data.swipeActions === "boolean") update.swipeActions = data.swipeActions
 
     const settings = await prisma.settings.upsert({
       where: { userId: user.id },

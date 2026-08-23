@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { DevelopedBy } from "@/components/shared/developed-by"
+import { ThemeSync } from "@/components/theme-sync"
 
 const COLLAPSE_KEY = "planfin:sidebar-collapsed"
 
@@ -26,6 +27,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <ThemeSync />
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

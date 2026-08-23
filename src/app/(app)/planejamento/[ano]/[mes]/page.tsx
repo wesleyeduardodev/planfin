@@ -45,7 +45,7 @@ import { DateRangeFilter } from "@/components/shared/date-range-filter"
 import { type DateRange, EMPTY_RANGE } from "@/lib/date-filter"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { getMonthName, formatCurrency } from "@/lib/format"
+import { getMonthName, formatCurrency, nowBR } from "@/lib/format"
 import { calcPeriodSummary } from "@/lib/calculations"
 import { getPeriodLabel } from "@/lib/periods"
 import { cn } from "@/lib/utils"
@@ -108,6 +108,7 @@ export default function PlanejamentoPage({
   const [deletePeriod, setDeletePeriod] = useState<number | null>(null)
   const [addPeriodOpen, setAddPeriodOpen] = useState(false)
   const [alignOpen, setAlignOpen] = useState(false)
+  const [fabOpen, setFabOpen] = useState(false)
   const [globalRange, setGlobalRange] = useState<DateRange>(EMPTY_RANGE)
   const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
   const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
@@ -354,6 +355,16 @@ export default function PlanejamentoPage({
       incomes: plan?.incomes.filter((inc) => inc.period === p) ?? [],
     }
   })
+
+  // Período que contém o dia de hoje (ou 1 se o plano não é do mês atual)
+  const todayPeriod = (() => {
+    if (!plan) return 1
+    const t = nowBR()
+    if (t.year !== year || t.month !== month) return 1
+    let p = 1
+    plan.cutDays.forEach((d, i) => { if (t.day >= d) p = i + 1 })
+    return p
+  })()
 
   // KPIs do mês
   const monthIncome = plan?.incomes.reduce((a, i) => a + i.expectedAmount, 0) ?? 0
@@ -618,12 +629,12 @@ export default function PlanejamentoPage({
           </div>
 
           {/* Mobile: períodos em sequência */}
-          <div className="lg:hidden">
+          <div className="lg:hidden pb-20">
             <div className="space-y-8">
               {periodData.map((pd, i) => (
                 <div key={pd.period} className={cn("space-y-4", i > 0 && "pt-6 border-t-2 border-dashed")}>
                   {multiPeriod && (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-background/95 backdrop-blur border-b flex items-center gap-2 flex-wrap">
                     {editingPeriod === pd.period ? (() => {
                       const { min, max } = getEditMinMax(pd.period)
                       return (
@@ -658,7 +669,10 @@ export default function PlanejamentoPage({
                       )
                     })() : (
                       <>
-                        <span className="text-sm font-medium text-muted-foreground">{pd.label}</span>
+                        <span className="text-sm font-semibold">{pd.label}</span>
+                        <span className={cn("ml-auto order-last font-mono text-xs", summaries[i].balance >= 0 ? "text-emerald-600" : "text-red-500")} title="Saldo projetado deste período">
+                          {formatCurrency(summaries[i].balance)}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -720,6 +734,41 @@ export default function PlanejamentoPage({
               <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
             </div>
           </div>
+
+          {/* FAB (mobile): novo lançamento no período de hoje */}
+          <div className="lg:hidden fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-40 flex flex-col items-end gap-2">
+            {fabOpen && (
+              <>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full bg-card border shadow-lg pl-4 pr-3 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400"
+                  onClick={() => { setFabOpen(false); setAddIncomePeriod(todayPeriod); setAddIncomeOpen(true) }}
+                >
+                  Entrada <span className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center"><Plus className="h-4 w-4" /></span>
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full bg-card border shadow-lg pl-4 pr-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400"
+                  onClick={() => { setFabOpen(false); setAddExpensePeriod(todayPeriod); setAddExpenseOpen(true) }}
+                >
+                  Despesa <span className="h-7 w-7 rounded-full bg-red-500 text-white flex items-center justify-center"><Plus className="h-4 w-4" /></span>
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              aria-label={fabOpen ? "Fechar" : "Novo lançamento"}
+              aria-expanded={fabOpen}
+              onClick={() => setFabOpen((o) => !o)}
+              className={cn(
+                "h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center transition-transform",
+                fabOpen && "rotate-45"
+              )}
+            >
+              <Plus className="h-7 w-7" />
+            </button>
+          </div>
+          {fabOpen && <div className="lg:hidden fixed inset-0 z-30 bg-black/20" onClick={() => setFabOpen(false)} />}
 
           {/* Dialogs */}
           <AlignBalanceDialog

@@ -1,13 +1,19 @@
 "use client"
 
 import { signOut, useSession } from "next-auth/react"
-import { Menu, LogOut } from "lucide-react"
+import { Menu, LogOut, Sun, Moon, Monitor } from "lucide-react"
+import { useTheme } from "next-themes"
+import { usePatchUserSettings } from "@/hooks/use-user-settings"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
@@ -19,6 +25,12 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession()
+  const { theme, setTheme } = useTheme()
+  const patchSettings = usePatchUserSettings()
+  function changeTheme(v: string) {
+    setTheme(v)
+    patchSettings.mutate({ themePreference: v as "light" | "dark" | "system" })
+  }
   const initials = session?.user?.name
     ?.split(" ")
     .map((n) => n[0])
@@ -58,7 +70,14 @@ export function Header({ onMenuClick }: HeaderProps) {
             </span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Tema</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={changeTheme}>
+            <DropdownMenuRadioItem value="light"><Sun className="mr-2 h-4 w-4" /> Claro</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="dark"><Moon className="mr-2 h-4 w-4" /> Escuro</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="system"><Monitor className="mr-2 h-4 w-4" /> Sistema</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="text-destructive"

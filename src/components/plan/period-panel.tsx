@@ -23,6 +23,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { SwipeCard } from "@/components/shared/swipe-card"
 import { DateRangeFilter } from "@/components/shared/date-range-filter"
 import { type DateRange, EMPTY_RANGE, isRangeActive, matchesRange } from "@/lib/date-filter"
 
@@ -619,8 +620,14 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
               }
 
               return (
-                <div
+                <SwipeCard
                   key={exp.id}
+                  onSwipeRight={!isPaid ? () => payFull(exp) : undefined}
+                  rightLabel="Pagar"
+                  onSwipeLeft={() => setDeleteId(exp.id)}
+                  leftLabel="Excluir"
+                >
+                <div
                   className={cn(
                     "rounded-lg border p-3 space-y-2.5 overflow-hidden",
                     isPaid
@@ -691,8 +698,8 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                         </Button>
                       )}
                       {!isPaid ? (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => payFull(exp)} aria-label="Marcar como pago">
-                          <Check className="h-4 w-4 text-emerald-600" />
+                        <Button size="sm" className="h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => payFull(exp)} aria-label="Marcar como pago">
+                          <Check className="h-3.5 w-3.5 mr-1" /> Pagar
                         </Button>
                       ) : (
                         <>
@@ -730,6 +737,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                     </div>
                   </div>
                 </div>
+                </SwipeCard>
               )
             })}
 

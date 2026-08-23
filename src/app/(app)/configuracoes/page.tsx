@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/shared/page-header"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { ReminderSettingsCard } from "@/components/settings/reminder-settings-card"
+import { AppearanceSettingsCard } from "@/components/settings/appearance-settings-card"
 
 interface Settings {
   id: string
@@ -346,8 +347,9 @@ export default function ConfiguracoesPage() {
         <ReminderSettingsCard />
         </div>
 
-        {/* Row 3: Danger zone */}
+        {/* Row 3: Aparência + Danger zone */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AppearanceSettingsCard />
         {/* Danger zone */}
         <Card className="border-destructive/50">
           <CardHeader>
