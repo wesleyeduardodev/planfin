@@ -398,6 +398,7 @@ export default function PlanejamentoPage({
     []
   )
   const finalBalance = summaries.length ? summaries[summaries.length - 1].balance : 0
+  const finalRealBalance = summaries.length ? summaries[summaries.length - 1].realBalance : 0
 
   return (
     <>
@@ -454,17 +455,21 @@ export default function PlanejamentoPage({
 
       {/* KPIs do mês */}
       {plan && summaries.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6">
           {[
             { label: "Receitas", value: monthIncome, cls: "text-emerald-600 dark:text-emerald-400" },
             { label: "Despesas", value: monthExpenses, cls: "text-red-500 dark:text-red-400" },
+            { label: "Dinheiro", value: monthExpenses - monthCard, cls: "text-emerald-600 dark:text-emerald-400" },
             { label: "No cartão", value: monthCard, cls: "text-violet-600 dark:text-violet-400" },
             { label: "A pagar", value: monthPending, cls: monthPending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground" },
-            { label: "Saldo final", value: finalBalance, cls: finalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400" },
+            { label: "Saldo projetado", value: finalBalance, cls: finalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", sub: `Real: ${formatCurrency(finalRealBalance)}`, title: "Saldo ao final do mês considerando tudo que está planejado (pago ou não). O Real considera só o que já foi pago/recebido." },
           ].map((k) => (
-            <div key={k.label} className="rounded-lg border bg-card px-3 py-2.5 last:col-span-2 sm:last:col-span-1">
+            <div key={k.label} className="rounded-lg border bg-card px-3 py-2.5 last:col-span-2 sm:last:col-span-3 lg:last:col-span-1" title={"title" in k ? k.title : undefined}>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{k.label}</div>
               <div className={cn("font-mono text-base sm:text-lg font-bold leading-tight mt-0.5", k.cls)}>{formatCurrency(k.value)}</div>
+              {"sub" in k && k.sub && (
+                <div className="text-[11px] font-mono text-muted-foreground mt-0.5">{k.sub}</div>
+              )}
             </div>
           ))}
         </div>
