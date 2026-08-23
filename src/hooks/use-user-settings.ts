@@ -13,10 +13,11 @@ export interface UserSettings {
   remindIncomes: boolean
   themePreference: "light" | "dark" | "system"
   swipeActions: boolean
+  showFab: boolean
 }
 
 export type UserSettingsPatch = Partial<Pick<UserSettings,
-  "reminderEveHour" | "reminderDayHour" | "remindExpenses" | "remindIncomes" | "remindersEnabled" | "themePreference" | "swipeActions"
+  "reminderEveHour" | "reminderDayHour" | "remindExpenses" | "remindIncomes" | "remindersEnabled" | "themePreference" | "swipeActions" | "showFab"
 >>
 
 /** Configurações do usuário (cache compartilhado por toda a UI) */

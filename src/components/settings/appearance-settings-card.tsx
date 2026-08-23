@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Sun, Moon, Monitor, Palette, Hand } from "lucide-react"
+import { Sun, Moon, Monitor, Palette, Hand, PlusCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,7 @@ export function AppearanceSettingsCard() {
   const { setTheme } = useTheme()
   const current = settings?.themePreference ?? "system"
   const swipe = settings?.swipeActions ?? true
+  const showFab = settings?.showFab ?? true
 
   function chooseTheme(v: "light" | "dark" | "system") {
     setTheme(v)
@@ -71,6 +72,23 @@ export function AppearanceSettingsCard() {
               <span className="flex items-center gap-1.5 text-sm font-medium"><Hand className="h-4 w-4" /> Deslizar para pagar / excluir</span>
               <span className="block text-xs text-muted-foreground">
                 No celular, arrastar um lançamento para a direita marca como pago/recebido e para a esquerda pede confirmação para excluir. Os botões continuam funcionando com isto desligado.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="pt-4 border-t">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-border"
+              checked={showFab}
+              onChange={(e) => patch.mutate({ showFab: e.target.checked })}
+            />
+            <span className="space-y-0.5">
+              <span className="flex items-center gap-1.5 text-sm font-medium"><PlusCircle className="h-4 w-4" /> Botão flutuante &ldquo;+&rdquo; no celular</span>
+              <span className="block text-xs text-muted-foreground">
+                Atalho no canto da tela para cadastrar entrada ou despesa no período de hoje. Desligado, use os botões &ldquo;+ Entrada&rdquo; e &ldquo;+ Despesa&rdquo; de cada período.
               </span>
             </span>
           </label>

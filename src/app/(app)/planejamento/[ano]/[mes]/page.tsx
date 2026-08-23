@@ -114,7 +114,7 @@ export default function PlanejamentoPage({
   const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [newPeriodDay, setNewPeriodDay] = useState(15)
 
-  const { data: userSettings } = useQuery<{ periodCount: number }>({
+  const { data: userSettings } = useQuery<{ periodCount: number; showFab?: boolean }>({
     queryKey: ["settings"],
     queryFn: () => fetch("/api/settings").then((r) => r.json()),
   })
@@ -629,7 +629,7 @@ export default function PlanejamentoPage({
           </div>
 
           {/* Mobile: períodos em sequência */}
-          <div className="lg:hidden pb-20">
+          <div className={cn("lg:hidden", (userSettings?.showFab ?? true) && "pb-20")}>
             <div className="space-y-8">
               {periodData.map((pd, i) => (
                 <div key={pd.period} className={cn("space-y-4", i > 0 && "pt-6 border-t-2 border-dashed")}>
@@ -736,6 +736,8 @@ export default function PlanejamentoPage({
           </div>
 
           {/* FAB (mobile): novo lançamento no período de hoje */}
+          {(userSettings?.showFab ?? true) && (
+          <>
           <div className="lg:hidden fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-40 flex flex-col items-end gap-2">
             {fabOpen && (
               <>
@@ -769,6 +771,8 @@ export default function PlanejamentoPage({
             </button>
           </div>
           {fabOpen && <div className="lg:hidden fixed inset-0 z-30 bg-black/20" onClick={() => setFabOpen(false)} />}
+          </>
+          )}
 
           {/* Dialogs */}
           <AlignBalanceDialog

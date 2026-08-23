@@ -105,6 +105,7 @@ export async function PATCH(request: Request) {
       remindersEnabled?: boolean
       themePreference?: string
       swipeActions?: boolean
+      showFab?: boolean
     } = {}
 
     const hour = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 23 ? (v as number) : undefined
@@ -123,6 +124,7 @@ export async function PATCH(request: Request) {
     if (typeof data.remindersEnabled === "boolean") update.remindersEnabled = data.remindersEnabled
     if (["light", "dark", "system"].includes(data.themePreference)) update.themePreference = data.themePreference
     if (typeof data.swipeActions === "boolean") update.swipeActions = data.swipeActions
+    if (typeof data.showFab === "boolean") update.showFab = data.showFab
 
     const settings = await prisma.settings.upsert({
       where: { userId: user.id },

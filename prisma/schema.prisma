@@ -40,6 +40,7 @@ model Settings {
   // Preferências de interface
   themePreference String  @default("system") @map("theme_preference") // light | dark | system
   swipeActions    Boolean @default(true)     @map("swipe_actions")
+  showFab         Boolean @default(true)     @map("show_fab")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
