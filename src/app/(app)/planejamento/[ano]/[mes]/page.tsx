@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -669,19 +668,14 @@ export default function PlanejamentoPage({
             <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
           </div>
 
-          {/* Mobile: Tabs */}
+          {/* Mobile: períodos em sequência */}
           <div className="lg:hidden">
-            <Tabs defaultValue="p1">
-              <TabsList className="w-full">
-                {periodData.map((pd) => (
-                  <TabsTrigger key={pd.period} value={`p${pd.period}`} className="flex-1">
-                    Per. {pd.period}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
+            <div className="space-y-8">
               {periodData.map((pd, i) => (
-                <TabsContent key={pd.period} value={`p${pd.period}`} className="space-y-4 mt-4">
+                <div key={pd.period} className={cn("space-y-4", i > 0 && "pt-6 border-t-2 border-dashed")}>
+                  <h2 className="text-base font-bold uppercase tracking-wide text-muted-foreground">
+                    Período {pd.period}
+                  </h2>
                   <div className="flex items-center gap-2 flex-wrap">
                     {editingPeriod === pd.period ? (() => {
                       const { min, max } = getEditMinMax(pd.period)
@@ -769,10 +763,10 @@ export default function PlanejamentoPage({
                     showEntryBalance
                     isFinal={i === periodCount - 1}
                   />
-                </TabsContent>
+                </div>
               ))}
-            </Tabs>
-            <div className="mt-4">
+            </div>
+            <div className="mt-8">
               <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
             </div>
           </div>
