@@ -23,6 +23,8 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { DateRangeFilter } from "@/components/shared/date-range-filter"
+import { type DateRange, EMPTY_RANGE, isRangeActive, matchesRange } from "@/lib/date-filter"
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   if (!active) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
@@ -54,6 +56,8 @@ interface PeriodPanelProps {
   year: number
   month: number
   onAddExpense: () => void
+  /** Filtro geral de data vindo da página (combinado com o filtro local) */
+  globalRange?: DateRange
 }
 
 interface Category {
@@ -62,8 +66,17 @@ interface Category {
   color: string
 }
 
-export function PeriodPanel({ planId, expenses, period, periodCount, year, month, onAddExpense }: PeriodPanelProps) {
+export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount, year, month, onAddExpense, globalRange }: PeriodPanelProps) {
   const queryClient = useQueryClient()
+  const [localRange, setLocalRange] = useState<DateRange>(EMPTY_RANGE)
+  const filterActive = isRangeActive(globalRange) || isRangeActive(localRange)
+  const expenses = useMemo(
+    () => (filterActive ? allExpenses.filter((e) => matchesRange(e.dueDate, [globalRange, localRange])) : allExpenses),
+    [allExpenses, globalRange, localRange, filterActive]
+  )
+  const hiddenNoDate = filterActive ? allExpenses.filter((e) => !e.dueDate).length : 0
+  const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
+  const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [editField, setEditField] = useState<"planned" | "paid" | "average" | "date" | "description">("planned")
@@ -533,12 +546,20 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   )
 
   const headerBar = (
-    <div className="px-4 py-2.5 border-b flex items-center justify-between bg-red-50 dark:bg-red-950/30 rounded-t-lg">
-      <h4 className="text-sm font-bold tracking-wide uppercase text-red-600 dark:text-red-400">
+    <div className="px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-y-1.5 bg-red-50 dark:bg-red-950/30 rounded-t-lg">
+      <h4 className="text-sm font-bold tracking-wide uppercase text-red-600 dark:text-red-400 flex items-center gap-2">
         Despesas
+        {filterActive && (
+          <span className="text-[10px] font-semibold normal-case tracking-normal rounded-full bg-background/80 border px-2 py-0.5 text-muted-foreground">
+            filtrado · {expenses.length} de {allExpenses.length}
+          </span>
+        )}
       </h4>
       <div className="flex items-center gap-1">
-        {expenses.length > 0 && (
+        {allExpenses.length > 0 && (
+          <DateRangeFilter value={localRange} onChange={setLocalRange} min={monthMin} max={monthMax} label="Data" size="xs" className="mr-1" />
+        )}
+        {allExpenses.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
@@ -570,7 +591,8 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
         <div className="p-2 space-y-2">
         {expenses.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground text-sm">
-            Nenhuma despesa
+            {filterActive && allExpenses.length > 0 ? "Nenhuma despesa neste intervalo" : "Nenhuma despesa"}
+            {hiddenNoDate > 0 && <div className="text-xs mt-1">{hiddenNoDate} sem data oculta(s)</div>}
           </div>
         ) : (
           <>
@@ -767,7 +789,8 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
             {expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
-                  Nenhuma despesa
+                  {filterActive && allExpenses.length > 0 ? "Nenhuma despesa neste intervalo" : "Nenhuma despesa"}
+                  {hiddenNoDate > 0 && <div className="text-xs mt-1">{hiddenNoDate} sem data oculta(s)</div>}
                 </TableCell>
               </TableRow>
             ) : (

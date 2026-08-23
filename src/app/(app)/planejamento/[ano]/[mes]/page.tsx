@@ -41,6 +41,8 @@ import { PeriodSummary } from "@/components/plan/period-summary"
 import { MonthSummary } from "@/components/plan/month-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
 import { AlignBalanceDialog } from "@/components/plan/align-balance-dialog"
+import { DateRangeFilter } from "@/components/shared/date-range-filter"
+import { type DateRange, EMPTY_RANGE } from "@/lib/date-filter"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { getMonthName, formatCurrency } from "@/lib/format"
@@ -106,6 +108,9 @@ export default function PlanejamentoPage({
   const [deletePeriod, setDeletePeriod] = useState<number | null>(null)
   const [addPeriodOpen, setAddPeriodOpen] = useState(false)
   const [alignOpen, setAlignOpen] = useState(false)
+  const [globalRange, setGlobalRange] = useState<DateRange>(EMPTY_RANGE)
+  const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
+  const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [newPeriodDay, setNewPeriodDay] = useState(15)
 
   const { data: plan, isLoading } = useQuery<MonthlyPlan | null>({
@@ -313,6 +318,8 @@ export default function PlanejamentoPage({
     setAddPeriodOpen(true)
   }
 
+  useEffect(() => { setGlobalRange(EMPTY_RANGE) }, [year, month])
+
   function navigateMonth(delta: number) {
     let newMonth = month + delta
     let newYear = year
@@ -382,7 +389,8 @@ export default function PlanejamentoPage({
         </div>
 
         {plan && (
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <DateRangeFilter value={globalRange} onChange={setGlobalRange} min={monthMin} max={monthMax} presets />
             <Button
               variant="outline"
               size="sm"
@@ -563,6 +571,7 @@ export default function PlanejamentoPage({
                 <IncomeSection
                   planId={plan.id}
                   incomes={pd.incomes}
+                  globalRange={globalRange}
                   period={pd.period}
                   periodCount={periodCount}
                   year={year}
@@ -575,6 +584,7 @@ export default function PlanejamentoPage({
                 <PeriodPanel
                   planId={plan.id}
                   expenses={pd.expenses}
+                  globalRange={globalRange}
                   period={pd.period}
                   periodCount={periodCount}
                   year={year}
@@ -660,6 +670,7 @@ export default function PlanejamentoPage({
                   <IncomeSection
                     planId={plan.id}
                     incomes={pd.incomes}
+                    globalRange={globalRange}
                     period={pd.period}
                     periodCount={periodCount}
                     year={year}
@@ -672,6 +683,7 @@ export default function PlanejamentoPage({
                   <PeriodPanel
                     planId={plan.id}
                     expenses={pd.expenses}
+                    globalRange={globalRange}
                     period={pd.period}
                     periodCount={periodCount}
                     year={year}
