@@ -113,6 +113,11 @@ export default function PlanejamentoPage({
   const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [newPeriodDay, setNewPeriodDay] = useState(15)
 
+  const { data: userSettings } = useQuery<{ periodCount: number }>({
+    queryKey: ["settings"],
+    queryFn: () => fetch("/api/settings").then((r) => r.json()),
+  })
+
   const { data: plan, isLoading } = useQuery<MonthlyPlan | null>({
     queryKey: ["plan", year, month],
     queryFn: async () => {
@@ -335,6 +340,9 @@ export default function PlanejamentoPage({
 
   const daysInMonth = new Date(year, month, 0).getDate()
   const periodCount = plan?.cutDays.length ?? 2
+  // Detalhes de período só aparecem quando há (ou está configurado) mais de um
+  const multiPeriod = periodCount > 1
+  const showAddPeriod = multiPeriod || (userSettings?.periodCount ?? 1) > 1
 
   // Dados por período
   const periodData = Array.from({ length: periodCount }, (_, i) => {
@@ -379,7 +387,7 @@ export default function PlanejamentoPage({
             <h1 className="text-2xl font-bold tracking-tight leading-tight">{getMonthName(month)} {year}</h1>
             <p className="text-muted-foreground text-xs mt-0.5">
               {plan
-                ? `${periodCount} ${periodCount === 1 ? "período" : "períodos"} · ${plan.expenses.length} despesas · ${pendingCount} ${pendingCount === 1 ? "pendente" : "pendentes"}`
+                ? `${multiPeriod ? `${periodCount} períodos · ` : ""}${plan.expenses.length} despesas · ${pendingCount} ${pendingCount === 1 ? "pendente" : "pendentes"}`
                 : "Planejamento financeiro mensal"}
             </p>
           </div>
@@ -389,8 +397,8 @@ export default function PlanejamentoPage({
         </div>
 
         {plan && (
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            <DateRangeFilter value={globalRange} onChange={setGlobalRange} min={monthMin} max={monthMax} presets />
+          <div className={cn("grid sm:flex sm:flex-wrap items-center gap-2 sm:justify-end [&>*]:min-w-0 [&_button]:w-full sm:[&_button]:w-auto", showAddPeriod ? "grid-cols-2" : "grid-cols-[1fr_1fr_auto]")}>
+            <DateRangeFilter value={globalRange} onChange={setGlobalRange} min={monthMin} max={monthMax} presets className="w-full sm:w-auto" />
             <Button
               variant="outline"
               size="sm"
@@ -399,9 +407,11 @@ export default function PlanejamentoPage({
             >
               <Scale className="mr-1 h-3.5 w-3.5" /> Alinhar saldo
             </Button>
-            <Button variant="outline" size="sm" onClick={openAddPeriod}>
-              <Plus className="mr-1 h-3.5 w-3.5" /> Período
-            </Button>
+            {showAddPeriod && (
+              <Button variant="outline" size="sm" onClick={openAddPeriod}>
+                <Plus className="mr-1 h-3.5 w-3.5" /> Período
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" aria-label="Mais ações" disabled={exporting !== null}>
@@ -510,6 +520,7 @@ export default function PlanejamentoPage({
           <div className="hidden lg:block space-y-8">
             {periodData.map((pd, i) => (
               <div key={pd.period} className="space-y-4">
+                {multiPeriod && (
                 <div className="flex items-center gap-2">
                   {editingPeriod === pd.period ? (() => {
                     const { min, max } = getEditMinMax(pd.period)
@@ -568,6 +579,7 @@ export default function PlanejamentoPage({
                     </Button>
                   )}
                 </div>
+                )}
                 <IncomeSection
                   planId={plan.id}
                   incomes={pd.incomes}
@@ -595,7 +607,7 @@ export default function PlanejamentoPage({
                   }}
                 />
                 <PeriodSummary
-                  label={`Período ${pd.period}`}
+                  label={multiPeriod ? `Período ${pd.period}` : "do Mês"}
                   summary={summaries[i]}
                   showEntryBalance
                   isFinal={i === periodCount - 1}
@@ -610,6 +622,7 @@ export default function PlanejamentoPage({
             <div className="space-y-8">
               {periodData.map((pd, i) => (
                 <div key={pd.period} className={cn("space-y-4", i > 0 && "pt-6 border-t-2 border-dashed")}>
+                  {multiPeriod && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {editingPeriod === pd.period ? (() => {
                       const { min, max } = getEditMinMax(pd.period)
@@ -667,6 +680,7 @@ export default function PlanejamentoPage({
                       </>
                     )}
                   </div>
+                  )}
                   <IncomeSection
                     planId={plan.id}
                     incomes={pd.incomes}
@@ -694,7 +708,7 @@ export default function PlanejamentoPage({
                     }}
                   />
                   <PeriodSummary
-                    label={`Período ${pd.period}`}
+                    label={multiPeriod ? `Período ${pd.period}` : "do Mês"}
                     summary={summaries[i]}
                     showEntryBalance
                     isFinal={i === periodCount - 1}

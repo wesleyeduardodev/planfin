@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { defaultDueDate } from "@/lib/format"
+import { defaultDueDate, getMonthName } from "@/lib/format"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,6 +58,10 @@ export function AddExpenseDialog({
     alreadyPaid: false,
   })
 
+  const [confirmOutside, setConfirmOutside] = useState(false)
+  const monthPrefix = `${year}-${String(month).padStart(2, "0")}-`
+  const outsideMonth = !!form.dueDate && !form.dueDate.startsWith(monthPrefix)
+
   useEffect(() => {
     if (open) setForm((f) => ({ ...f, dueDate: defaultDueDate(year, month) }))
   }, [open, year, month])
@@ -105,6 +110,10 @@ export function AddExpenseDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault()
+            if (outsideMonth) {
+              setConfirmOutside(true)
+              return
+            }
             mutation.mutate()
           }}
           className="space-y-4"
@@ -218,6 +227,19 @@ export function AddExpenseDialog({
           </div>
         </form>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmOutside}
+        onOpenChange={setConfirmOutside}
+        title="Data fora do mês"
+        description={`A data informada (${form.dueDate.split("-").reverse().join("/")}) não está em ${getMonthName(month)} ${year}. Quer cadastrar esta despesa mesmo assim neste mês?`}
+        confirmLabel="Sim, cadastrar"
+        onConfirm={() => {
+          setConfirmOutside(false)
+          mutation.mutate()
+        }}
+        loading={mutation.isPending}
+      />
     </Dialog>
   )
 }
