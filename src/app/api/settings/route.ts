@@ -89,3 +89,44 @@ export async function PUT(request: Request) {
     return serverError(error)
   }
 }
+
+// Atualiza só as preferências de lembrete (não mexe em períodos)
+export async function PATCH(request: Request) {
+  const user = await getAuthUser()
+  if (!user) return unauthorized()
+
+  try {
+    const data = await request.json()
+    const update: {
+      reminderEveHour?: number
+      reminderDayHour?: number
+      remindExpenses?: boolean
+      remindIncomes?: boolean
+      remindersEnabled?: boolean
+    } = {}
+
+    const hour = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 23 ? (v as number) : undefined
+    if (data.reminderEveHour !== undefined) {
+      const h = hour(data.reminderEveHour)
+      if (h === undefined) return NextResponse.json({ error: "Hora inválida" }, { status: 400 })
+      update.reminderEveHour = h
+    }
+    if (data.reminderDayHour !== undefined) {
+      const h = hour(data.reminderDayHour)
+      if (h === undefined) return NextResponse.json({ error: "Hora inválida" }, { status: 400 })
+      update.reminderDayHour = h
+    }
+    if (typeof data.remindExpenses === "boolean") update.remindExpenses = data.remindExpenses
+    if (typeof data.remindIncomes === "boolean") update.remindIncomes = data.remindIncomes
+    if (typeof data.remindersEnabled === "boolean") update.remindersEnabled = data.remindersEnabled
+
+    const settings = await prisma.settings.upsert({
+      where: { userId: user.id },
+      update,
+      create: { userId: user.id, ...update },
+    })
+    return NextResponse.json(settings)
+  } catch (error) {
+    return serverError(error)
+  }
+}

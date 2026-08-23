@@ -160,7 +160,7 @@ Dependência nova: `web-push` (npm).
 7. Envia para **todas** as subscriptions do usuário. Resposta `404/410` → apaga a subscription; outro erro → `failures++` (apaga com 5).
 8. Grava `NotificationLog`.
 
-**Tolerância a atraso:** o agendador roda de hora em hora, mas pode atrasar alguns minutos (Render free dorme). Por isso a comparação é por **hora**, não por minuto, e o log garante que não repete.
+**Tolerância a atraso:** o agendador roda de hora em hora, mas pode atrasar alguns minutos (latência do GitHub Actions). Por isso a comparação é por **hora**, não por minuto, e o log garante que não repete.
 
 ---
 
@@ -206,10 +206,10 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://<app>.onrender.com/api/push/run
+      - run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://<app>.vercel.app/api/push/run
 ```
 
-Alternativas: **Render Cron Job** (serviço separado, ~US$ 1/mês, mais confiável no horário) ou **cron-job.org** (gratuito, externo).
+Alternativas: **Vercel Cron Jobs** (nativo via `vercel.json`, mas no plano Hobby só permite execução **1× por dia**, o que não atende "de hora em hora" — precisaria do plano Pro) ou **cron-job.org** (gratuito, externo).
 
 Observação: GitHub Actions agendado pode atrasar 5–15 min em horários de pico. Como o envio é "por hora", isso só desloca o lembrete de 8:00 para ~8:10.
 
@@ -242,7 +242,7 @@ Componente `ReminderSettingsCard`:
 - **iPhone**: exige iOS 16.4+ e o app **instalado na tela inicial**; permissão pedida de dentro do app instalado. Se o usuário remover o app, a subscription morre (o ciclo limpa ao receber 410).
 - **Android**: funciona no Chrome normal e instalado. Alguns fabricantes (Xiaomi, Samsung com economia agressiva) podem atrasar notificações — fora do nosso controle.
 - Lembretes só para itens **com data** e **pendentes**. Itens sem data não notificam.
-- Precisão de horário: ±15 min (agendador + Render free dormindo).
+- Precisão de horário: ±15 min (GitHub Actions agendado não é exato).
 - Sem histórico visível de notificações enviadas (só o log interno).
 
 ---
@@ -251,7 +251,7 @@ Componente `ReminderSettingsCard`:
 
 | # | Passo | Estimativa |
 |---|---|---|
-| 1 | `npm i web-push`, gerar chaves VAPID, variáveis no Render | 20 min |
+| 1 | `npm i web-push`, gerar chaves VAPID, variáveis na Vercel | 20 min |
 | 2 | Schema + migration `add_push_reminders` | 20 min |
 | 3 | `sw.js`: handlers `push` e `notificationclick` | 30 min |
 | 4 | `src/lib/push.ts`: `sendToUser(userId, payload)` com limpeza de subscriptions inválidas | 1 h |

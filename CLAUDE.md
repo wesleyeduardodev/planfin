@@ -12,7 +12,7 @@ Aplicacao web que substitui planilha Excel de orcamento mensal. Divide o mes em 
 - **TanStack Query 5** (estado client-side)
 - **React Hook Form** + **Zod** (formularios e validacao)
 - **pdfmake** (export PDF) + **exceljs** (export Excel)
-- Deploy: **Render**
+- Deploy: **Vercel** (app) + **Railway** (PostgreSQL)
 
 ## Comandos
 ```bash
@@ -113,4 +113,4 @@ src/
 - [x] Fase 2: Cadastros (CRUD categorias)
 - [x] Fase 3: Planejamento core (gerar mes, tela N periodos, edicao inline, saldos)
 - [x] Fase 4: Dashboard e Relatorios (graficos, resumos, export PDF/Excel) — parcial
-- [ ] Fase 5: Deploy (Render, responsividade, testes)
+- [ ] Fase 5: Deploy (Vercel + Railway, responsividade, testes)

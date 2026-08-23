@@ -1,0 +1,18 @@
+name: Lembretes PlanFin
+
+# Roda de hora em hora e chama a rota que envia as notificações push.
+# Configure os secrets APP_URL e CRON_SECRET no repositório (Settings → Secrets → Actions).
+on:
+  schedule:
+    - cron: "0 * * * *"   # todo início de hora (UTC)
+  workflow_dispatch:        # permite rodar manualmente na aba Actions
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar /api/push/run
+        run: |
+          curl --fail --silent --show-error --max-time 120 --retry 3 --retry-delay 20 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/push/run"

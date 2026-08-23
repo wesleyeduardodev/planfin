@@ -16,6 +16,8 @@ model User {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   settings     Settings?
+  pushSubscriptions PushSubscription[]
+  notificationLogs  NotificationLog[]
   categories   Category[]
   monthlyPlans MonthlyPlan[]
 
@@ -28,9 +30,45 @@ model Settings {
   periodCount Int    @default(1) @map("period_count")
   periodDays  Int[]  @default([1]) @map("period_days")
 
+  // Lembretes push
+  remindersEnabled Boolean @default(false) @map("reminders_enabled")
+  reminderEveHour  Int     @default(20)    @map("reminder_eve_hour")
+  reminderDayHour  Int     @default(8)     @map("reminder_day_hour")
+  remindExpenses   Boolean @default(true)  @map("remind_expenses")
+  remindIncomes    Boolean @default(true)  @map("remind_incomes")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("settings")
+}
+
+model PushSubscription {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?   @map("user_agent")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  failures   Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model NotificationLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  kind       String
+  targetDate DateTime @map("target_date")
+  sentAt     DateTime @default(now()) @map("sent_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, targetDate])
+  @@map("notification_logs")
 }
 
 model Category {

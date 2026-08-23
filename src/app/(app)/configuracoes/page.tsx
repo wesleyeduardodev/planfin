@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/shared/page-header"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { ReminderSettingsCard } from "@/components/settings/reminder-settings-card"
 
 interface Settings {
   id: string
@@ -271,7 +272,7 @@ export default function ConfiguracoesPage() {
         </Card>
         </div>
 
-        {/* Row 2: Periods + Delete */}
+        {/* Row 2: Periods + Reminders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Period settings */}
         <Card>
@@ -342,6 +343,11 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
 
+        <ReminderSettingsCard />
+        </div>
+
+        {/* Row 3: Danger zone */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Danger zone */}
         <Card className="border-destructive/50">
           <CardHeader>
