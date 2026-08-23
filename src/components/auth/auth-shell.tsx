@@ -142,11 +142,14 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           {children}
 
           <p className="mt-7 text-center text-sm text-muted-foreground">{footer}</p>
-          <div className="mt-6 flex justify-center lg:hidden">
-            <DevelopedBy />
-          </div>
         </div>
       </main>
+
+      {/* Mobile: faixa de rodapé escura, igual ao hero */}
+      <footer className="lg:hidden bg-[#0b1220] px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between text-[11px] text-white/35">
+        <span>© {new Date().getFullYear()} PlanFin</span>
+        <DevelopedBy tone="dark" />
+      </footer>
     </div>
   )
 }
