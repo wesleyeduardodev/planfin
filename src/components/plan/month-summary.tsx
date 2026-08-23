@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
 
 interface MonthSummaryProps {
-  expenses: { plannedAmount: number; averageAmount: number | null; isFixed: boolean }[]
+  expenses: { plannedAmount: number; averageAmount: number | null; isFixed: boolean; paymentMethod?: "CASH" | "CARD" }[]
   incomes: { expectedAmount: number; averageAmount: number | null; isFixed: boolean }[]
 }
 
@@ -11,6 +11,8 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
   const expenseTotal = expenses.reduce((s, e) => s + e.plannedAmount, 0)
   const expenseVariable = expenseTotal - expenseFixed
   const expenseAverage = expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+  const expenseCard = expenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
+  const expenseCash = expenseTotal - expenseCard
 
   const incomeFixed = incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
   const incomeTotal = incomes.reduce((s, i) => s + i.expectedAmount, 0)
@@ -48,6 +50,20 @@ export function MonthSummary({ expenses, incomes }: MonthSummaryProps) {
               <span className="font-mono font-semibold text-muted-foreground">
                 {formatCurrency(expenseAverage)}
               </span>
+            </div>
+            <div className="border-t pt-2 mt-2 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Dinheiro</span>
+                <span className="font-mono font-semibold">
+                  {formatCurrency(expenseCash)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-violet-600 dark:text-violet-400 font-medium">Cartão</span>
+                <span className="font-mono font-semibold">
+                  {formatCurrency(expenseCard)}
+                </span>
+              </div>
             </div>
             <div className="border-t-2 pt-3 mt-3 border-red-200 dark:border-red-900">
               <div className="flex justify-between items-center">

@@ -17,6 +17,7 @@ export interface ExportPlan {
     paidAmount: number
     averageAmount: number | null
     isFixed: boolean
+    paymentMethod: "CASH" | "CARD"
     category: { name: string; color: string } | null
   }[]
   incomes: {
@@ -38,6 +39,8 @@ const COLORS = {
   muted: "#94a3b8",
   indigo: "#4f46e5",
   amberDark: "#d97706",
+  violet: "#7c3aed",
+  emerald: "#059669",
   incomeHeaderBg: "#ecfdf5",
   expenseHeaderBg: "#fef2f2",
   zebra: "#f8fafc",
@@ -204,6 +207,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             { text: "Categoria", style: "tableHeader" },
             { text: "Descrição", style: "tableHeader" },
             { text: "Tipo", style: "tableHeader" },
+            { text: "Pgto.", style: "tableHeader" },
             { text: "Vencimento", style: "tableHeader" },
             { text: "Valor", style: "tableHeader", alignment: "right" },
             { text: "Médio", style: "tableHeader", alignment: "right" },
@@ -219,6 +223,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             { text: exp.category?.name || "-", color: exp.category?.color || "#6b7280" },
             exp.description,
             exp.isFixed ? "Fixa" : "Variável",
+            { text: exp.paymentMethod === "CARD" ? "Cartão" : "Dinheiro", color: exp.paymentMethod === "CARD" ? COLORS.violet : COLORS.emerald },
             exp.dueDate ? formatShortDate(exp.dueDate) : "-",
             { text: formatCurrency(exp.plannedAmount), alignment: "right" },
             { text: exp.averageAmount != null ? formatCurrency(exp.averageAmount) : "—", alignment: "right", color: COLORS.muted },
@@ -228,6 +233,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
 
         const expenseFixedTotal = periodExpenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
         const expenseAverageTotal = periodExpenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+        const expenseCardTotal = periodExpenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
         expenseBody.push([
           {
             text: [
@@ -235,9 +241,14 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
               { text: `Fixo: ${formatCurrency(expenseFixedTotal)}`, color: COLORS.indigo, fontSize: 8 },
               { text: "  +  ", color: COLORS.muted, fontSize: 8 },
               { text: `Variável: ${formatCurrency(summary.totalExpenses - expenseFixedTotal)}`, color: COLORS.amberDark, fontSize: 8 },
+              { text: "\n" },
+              { text: `Dinheiro: ${formatCurrency(summary.totalExpenses - expenseCardTotal)}`, color: COLORS.emerald, fontSize: 8 },
+              { text: "  |  ", color: COLORS.muted, fontSize: 8 },
+              { text: `Cartão: ${formatCurrency(expenseCardTotal)}`, color: COLORS.violet, fontSize: 8 },
             ],
-            colSpan: 4,
+            colSpan: 5,
           },
+          {},
           {},
           {},
           {},
@@ -249,7 +260,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
         content.push({
           table: {
             headerRows: 1,
-            widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto"],
+            widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto"],
             body: expenseBody,
           },
           layout: {
@@ -297,6 +308,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
     const totalExpected = plan.incomes.reduce((s, i) => s + i.expectedAmount, 0)
     const monthExpenseFixed = plan.expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
     const monthExpenseAverage = plan.expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+    const monthExpenseCard = plan.expenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
     const monthIncomeFixed = plan.incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
     const monthIncomeAverage = plan.incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
 
@@ -323,6 +335,12 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
     } as Content)
     content.push({
       text: `Despesas — Fixo: ${formatCurrency(monthExpenseFixed)}  |  Variável: ${formatCurrency(totalPlanned - monthExpenseFixed)}  |  Médio: ${formatCurrency(monthExpenseAverage)}`,
+      fontSize: 8,
+      color: "#475569",
+      margin: [0, 2, 0, 2],
+    } as Content)
+    content.push({
+      text: `Despesas — Dinheiro: ${formatCurrency(totalPlanned - monthExpenseCard)}  |  Cartão: ${formatCurrency(monthExpenseCard)}`,
       fontSize: 8,
       color: "#475569",
       margin: [0, 2, 0, 2],

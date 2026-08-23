@@ -27,6 +27,8 @@ export async function GET() {
         0
       )
       const totalPaid = plan.expenses.reduce((s, e) => s + e.paidAmount, 0)
+      const totalCard = plan.expenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
+      const totalCash = totalExpenses - totalCard
       const totalReceived = plan.incomes.reduce(
         (s, i) => s + i.receivedAmount,
         0
@@ -48,6 +50,8 @@ export async function GET() {
         totalIncome,
         totalExpenses,
         totalPaid,
+        totalCash,
+        totalCard,
         totalReceived,
         balance: plan.initialBalance + totalIncome - totalExpenses,
         realBalance,

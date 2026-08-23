@@ -32,6 +32,7 @@ export async function PUT(
         paidAmount: data.paidAmount,
         averageAmount: data.averageAmount,
         isFixed: data.isFixed,
+        paymentMethod: data.paymentMethod === undefined ? undefined : (data.paymentMethod === "CARD" ? "CARD" : "CASH"),
         categoryId: data.categoryId,
         period: data.period,
       },

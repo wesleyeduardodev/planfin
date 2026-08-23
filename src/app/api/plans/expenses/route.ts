@@ -30,6 +30,7 @@ export async function POST(request: Request) {
         paidAmount: data.paidAmount ?? 0,
         averageAmount: data.averageAmount ?? null,
         isFixed: data.isFixed ?? true,
+        paymentMethod: data.paymentMethod === "CARD" ? "CARD" : "CASH",
         categoryId: data.categoryId,
       },
       include: { category: true },

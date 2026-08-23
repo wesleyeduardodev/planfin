@@ -148,6 +148,7 @@ export async function copyMonthlyPlan(
         paidAmount: 0,
         averageAmount: e.averageAmount,
         isFixed: e.isFixed,
+        paymentMethod: e.paymentMethod,
         categoryId: e.categoryId,
       },
     })

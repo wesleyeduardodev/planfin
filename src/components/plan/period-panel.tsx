@@ -33,6 +33,7 @@ interface PlanExpense {
   paidAmount: number
   averageAmount: number | null
   isFixed: boolean
+  paymentMethod: "CASH" | "CARD"
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
 }
@@ -65,7 +66,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
 
-  type SortKey = "description" | "type" | "date" | "planned" | "average" | "paid" | "remaining"
+  type SortKey = "description" | "type" | "payment" | "date" | "planned" | "average" | "paid" | "remaining"
   type SortDir = "asc" | "desc"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -89,6 +90,9 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
           break
         case "type":
           cmp = (a.isFixed ? 0 : 1) - (b.isFixed ? 0 : 1)
+          break
+        case "payment":
+          cmp = (a.paymentMethod === "CASH" ? 0 : 1) - (b.paymentMethod === "CASH" ? 0 : 1)
           break
         case "date":
           cmp = (a.dueDate ?? "").localeCompare(b.dueDate ?? "")
@@ -145,6 +149,32 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
       data: { isFixed: !toggleFixedTarget.isFixed },
     })
     setToggleFixedTarget(null)
+  }
+
+  function togglePaymentMethod(exp: PlanExpense) {
+    updateMutation.mutate({
+      id: exp.id,
+      data: { paymentMethod: exp.paymentMethod === "CARD" ? "CASH" : "CARD" },
+    })
+  }
+
+  function renderPaymentBadge(exp: PlanExpense) {
+    const isCard = exp.paymentMethod === "CARD"
+    return (
+      <Badge
+        variant="outline"
+        title="Clique para alternar Dinheiro/Cartão"
+        className={cn(
+          "text-[10px] font-semibold shrink-0 cursor-pointer",
+          isCard
+            ? "text-violet-600 border-violet-300 bg-violet-50 dark:text-violet-400 dark:border-violet-800 dark:bg-violet-950/50"
+            : "text-emerald-600 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/50"
+        )}
+        onClick={() => togglePaymentMethod(exp)}
+      >
+        {isCard ? "Cartão" : "Dinheiro"}
+      </Badge>
+    )
   }
 
   function confirmMovePeriod() {
@@ -299,6 +329,20 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   const totalFixed = expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
   const totalVariable = totalPlanned - totalFixed
   const totalAverage = expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+  const totalCard = expenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
+  const totalCash = totalPlanned - totalCard
+
+  const paymentBreakdown = (
+    <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
+      <span className="text-emerald-600 dark:text-emerald-400">
+        Dinheiro: <span className="font-mono">{formatCurrency(totalCash)}</span>
+      </span>
+      <span className="text-muted-foreground font-normal">|</span>
+      <span className="text-violet-600 dark:text-violet-400">
+        Cartão: <span className="font-mono">{formatCurrency(totalCard)}</span>
+      </span>
+    </span>
+  )
 
   const fixedVariableBreakdown = (
     <span className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap">
@@ -455,6 +499,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
   const sortLabels: Record<SortKey, string> = {
     description: "Descrição",
     type: "Tipo",
+    payment: "Pgto.",
     date: "Data",
     planned: "Valor",
     average: "Médio",
@@ -571,6 +616,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                       ) : (
                         <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
+                      {renderPaymentBadge(exp)}
                       <div className="text-xs text-muted-foreground">
                         {renderDateEditor(exp)}
                       </div>
@@ -647,8 +693,9 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                   </span>
                 </div>
               )}
-              <div className="mt-2 pt-2 border-t">
+              <div className="mt-2 pt-2 border-t space-y-1">
                 {fixedVariableBreakdown}
+                {paymentBreakdown}
               </div>
               {totalAverage > 0 && (
                 <div className="flex justify-end mt-1">
@@ -671,6 +718,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
             <TableRow>
               <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon column="description" /></button></TableHead>
               <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon column="type" /></button></TableHead>
+              <TableHead className="w-24"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("payment")}>Pgto. <SortIcon column="payment" /></button></TableHead>
               <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon column="date" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("planned")}>Valor <SortIcon column="planned" /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon column="average" /></button></TableHead>
@@ -682,7 +730,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
           <TableBody>
             {expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
                   Nenhuma despesa
                 </TableCell>
               </TableRow>
@@ -742,6 +790,7 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>{renderPaymentBadge(exp)}</TableCell>
                     <TableCell>
                       {renderDateEditor(exp)}
                     </TableCell>
@@ -825,8 +874,11 @@ export function PeriodPanel({ planId, expenses, period, periodCount, year, month
             {/* Totals row */}
             {expenses.length > 0 && (
               <TableRow className="bg-red-50/80 dark:bg-red-950/20 font-bold border-t-2 border-red-200 dark:border-red-900">
-                <TableCell colSpan={3}>
-                  {fixedVariableBreakdown}
+                <TableCell colSpan={4}>
+                  <div className="space-y-1">
+                    {fixedVariableBreakdown}
+                    {paymentBreakdown}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalPlanned)}

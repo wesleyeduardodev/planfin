@@ -23,10 +23,12 @@ const COLORS = {
   redText: "FFef4444",
   indigoText: "FF4f46e5",
   amberText: "FFd97706",
+  violetText: "FF7c3aed",
+  emeraldText: "FF059669",
 }
 
-const LAST_COL = 8 // H
-const LAST_COL_LETTER = "H"
+const LAST_COL = 9 // I
+const LAST_COL_LETTER = "I"
 
 function applyThinBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -117,11 +119,12 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
       { width: 18 }, // A - Categoria/Descrição
       { width: 28 }, // B - Descrição
       { width: 12 }, // C - Tipo
-      { width: 14 }, // D - Vencimento
-      { width: 16 }, // E - Valor/Esperado
-      { width: 16 }, // F - Médio
-      { width: 16 }, // G - Pago/Recebido
-      { width: 16 }, // H - Restante
+      { width: 12 }, // D - Pgto. (despesas) / Esperado (receitas)
+      { width: 16 }, // E - Vencimento (despesas) / Médio (receitas)
+      { width: 16 }, // F - Valor (despesas) / Recebido (receitas)
+      { width: 16 }, // G - Médio (despesas) / Restante (receitas)
+      { width: 16 }, // H - Pago
+      { width: 16 }, // I - Restante
     ]
 
     // Row 1: Title
@@ -239,6 +242,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
           exp.category?.name || "-",
           exp.description,
           exp.isFixed ? "Fixa" : "Variável",
+          exp.paymentMethod === "CARD" ? "Cartão" : "Dinheiro",
           exp.dueDate ? formatShortDate(exp.dueDate) : "-",
           exp.plannedAmount,
           exp.averageAmount ?? null,
@@ -249,7 +253,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
           sheet,
           `Despesas_${plan.year}_${plan.month}_P${p}`,
           expHeaderRow,
-          ["Categoria", "Descrição", "Tipo", "Vencimento", "Valor", "Médio", "Pago", "Restante"],
+          ["Categoria", "Descrição", "Tipo", "Pgto.", "Vencimento", "Valor", "Médio", "Pago", "Restante"],
           expRows
         )
         styleHeaderRow(sheet, expHeaderRow, LAST_COL, COLORS.expenseHeaderBg)
@@ -264,8 +268,9 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
             const cell = row.getCell(c)
             applyThinBorder(cell)
             if (fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } }
-            if (c >= 5) applyCurrencyFormat(cell)
-            if (c === 6) cell.font = { ...cell.font, color: { argb: COLORS.mutedText } }
+            if (c >= 6) applyCurrencyFormat(cell)
+            if (c === 7) cell.font = { ...cell.font, color: { argb: COLORS.mutedText } }
+            if (c === 4) cell.font = { ...cell.font, color: { argb: exp.paymentMethod === "CARD" ? COLORS.violetText : COLORS.emeraldText } }
           }
           if (exp.category?.color) {
             const catCell = row.getCell(1)
@@ -279,16 +284,22 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
         const expAverage = periodExpenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
         const totalRow = sheet.getRow(currentRow)
         totalRow.getCell(1).value = "Total"
-        totalRow.getCell(5).value = summary.totalExpenses
-        totalRow.getCell(6).value = expAverage
-        totalRow.getCell(7).value = summary.totalPaid
-        totalRow.getCell(8).value = summary.totalRemaining
-        styleTotalRow(sheet, currentRow, LAST_COL, 5)
-        totalRow.getCell(6).font = { bold: true, color: { argb: COLORS.mutedText } }
+        totalRow.getCell(6).value = summary.totalExpenses
+        totalRow.getCell(7).value = expAverage
+        totalRow.getCell(8).value = summary.totalPaid
+        totalRow.getCell(9).value = summary.totalRemaining
+        styleTotalRow(sheet, currentRow, LAST_COL, 6)
+        totalRow.getCell(7).font = { bold: true, color: { argb: COLORS.mutedText } }
         currentRow++
 
         const expFixed = periodExpenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
         addBreakdownRow(sheet, currentRow, expFixed, summary.totalExpenses - expFixed)
+        currentRow++
+        const expCard = periodExpenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
+        sheet.mergeCells(`A${currentRow}:${LAST_COL_LETTER}${currentRow}`)
+        const payCell = sheet.getCell(`A${currentRow}`)
+        payCell.value = `Dinheiro: ${formatCurrency(summary.totalExpenses - expCard)}  |  Cartão: ${formatCurrency(expCard)}`
+        payCell.font = { size: 9, italic: true, color: { argb: COLORS.mutedText } }
         currentRow += 2
       }
 
@@ -309,6 +320,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
     const totalPaid = plan.expenses.reduce((s, e) => s + e.paidAmount, 0)
     const expenseFixed = plan.expenses.reduce((s, e) => s + (e.isFixed ? e.plannedAmount : 0), 0)
     const expenseAverage = plan.expenses.reduce((s, e) => s + (e.averageAmount ?? 0), 0)
+    const expenseCard = plan.expenses.reduce((s, e) => s + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
     const totalExpected = plan.incomes.reduce((s, i) => s + i.expectedAmount, 0)
     const totalReceived = plan.incomes.reduce((s, i) => s + i.receivedAmount, 0)
     const incomeFixed = plan.incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
@@ -328,6 +340,8 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
       ["Receitas Fixas", formatCurrency(incomeFixed), "Despesas Fixas", formatCurrency(expenseFixed)],
       ["Receitas Variáveis", formatCurrency(totalExpected - incomeFixed), "Despesas Variáveis", formatCurrency(totalPlanned - expenseFixed)],
       ["Médio Receitas", formatCurrency(incomeAverage), "Médio Despesas", formatCurrency(expenseAverage)],
+      ["", "", "Despesas em Dinheiro", formatCurrency(totalPlanned - expenseCard)],
+      ["", "", "Despesas no Cartão", formatCurrency(expenseCard)],
       ["Receitas Recebidas", formatCurrency(totalReceived), "Despesas Pagas", formatCurrency(totalPaid)],
       ["Saldo Final Projetado", formatCurrency(entryBalance), "Saldo Final Real", formatCurrency(realEntryBalance)],
     ]

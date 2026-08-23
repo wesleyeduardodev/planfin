@@ -76,12 +76,18 @@ model PlanExpense {
   paidAmount         Float     @default(0) @map("paid_amount")
   averageAmount      Float?    @map("average_amount")
   isFixed    Boolean @default(true) @map("is_fixed")
+  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
   categoryId String? @map("category_id")
 
   plan     MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   category Category?   @relation(fields: [categoryId], references: [id])
 
   @@map("plan_expenses")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
 }
 
 model PlanIncome {

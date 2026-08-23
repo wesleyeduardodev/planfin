@@ -37,6 +37,8 @@ interface ReportData {
     totalIncome: number
     totalExpenses: number
     totalPaid: number
+    totalCash: number
+    totalCard: number
     totalReceived: number
     balance: number
     realBalance: number
@@ -349,6 +351,8 @@ export default function RelatoriosPage() {
                     <TableHead>Mês</TableHead>
                     <TableHead className="text-right">Receitas</TableHead>
                     <TableHead className="text-right">Despesas</TableHead>
+                    <TableHead className="text-right">Dinheiro</TableHead>
+                    <TableHead className="text-right">Cartão</TableHead>
                     <TableHead className="text-right">Pago</TableHead>
                     <TableHead className="text-right">Saldo Projetado</TableHead>
                     <TableHead className="text-right">Saldo Real</TableHead>
@@ -381,6 +385,12 @@ export default function RelatoriosPage() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-red-500">
                         {formatCurrency(d.totalExpenses)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(d.totalCash)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-violet-600 dark:text-violet-400">
+                        {formatCurrency(d.totalCard)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCurrency(d.totalPaid)}

@@ -52,6 +52,7 @@ interface PlanExpense {
   paidAmount: number
   averageAmount: number | null
   isFixed: boolean
+  paymentMethod: "CASH" | "CARD"
   categoryId: string | null
   category: { id: string; name: string; color: string } | null
 }

@@ -52,6 +52,7 @@ export function AddExpenseDialog({
     dueDate: "",
     categoryId: "",
     isFixed: true,
+    paymentMethod: "CASH" as "CASH" | "CARD",
     alreadyPaid: false,
   })
 
@@ -75,6 +76,7 @@ export function AddExpenseDialog({
           dueDate: form.dueDate || null,
           categoryId: form.categoryId || null,
           isFixed: form.isFixed,
+          paymentMethod: form.paymentMethod,
         }),
       })
       if (!res.ok) throw new Error()
@@ -83,7 +85,7 @@ export function AddExpenseDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", plannedAmount: 0, averageAmount: 0, dueDate: "", categoryId: "", isFixed: true, alreadyPaid: false })
+      setForm({ description: "", plannedAmount: 0, averageAmount: 0, dueDate: "", categoryId: "", isFixed: true, paymentMethod: "CASH", alreadyPaid: false })
       toast.success("Despesa adicionada")
     },
     onError: () => toast.error("Erro ao adicionar despesa"),
@@ -161,6 +163,21 @@ export function AddExpenseDialog({
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Forma de pagamento</Label>
+            <Select
+              value={form.paymentMethod}
+              onValueChange={(v) => setForm({ ...form, paymentMethod: v as "CASH" | "CARD" })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Dinheiro</SelectItem>
+                <SelectItem value="CARD">Cartão</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer">
