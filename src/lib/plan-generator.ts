@@ -78,7 +78,7 @@ export async function generateMonthlyPlan(
   const settings = await prisma.settings.findUnique({ where: { userId } })
   const periodDays = settings?.periodDays ?? [1]
 
-  const initialBalance = await calcInitialBalance(userId, year, month)
+  const initialBalance = 0 // saldo inicial não é mais usado; sobras entram como receita
 
   // Create the plan
   const plan = await prisma.monthlyPlan.create({
@@ -119,7 +119,7 @@ export async function copyMonthlyPlan(
     throw new Error("Nenhum plano anterior para copiar")
   }
 
-  const initialBalance = await calcInitialBalance(userId, year, month)
+  const initialBalance = 0 // saldo inicial não é mais usado; sobras entram como receita
 
   // Create new plan with same cutDays as previous
   const plan = await prisma.monthlyPlan.create({

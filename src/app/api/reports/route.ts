@@ -33,7 +33,7 @@ export async function GET() {
         (s, i) => s + i.receivedAmount,
         0
       )
-      const realBalance = plan.initialBalance + totalReceived - totalPaid
+      const realBalance = totalReceived - totalPaid
 
       // Breakdown dinâmico por período
       const periodCount = plan.cutDays.length
@@ -53,7 +53,7 @@ export async function GET() {
         totalCash,
         totalCard,
         totalReceived,
-        balance: plan.initialBalance + totalIncome - totalExpenses,
+        balance: totalIncome - totalExpenses,
         realBalance,
         initialBalance: plan.initialBalance,
         ...periodExpenses,

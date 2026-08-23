@@ -60,8 +60,8 @@ export async function GET() {
       // Period-level data
       const periodCount = plan.cutDays.length
       const periods = []
-      let projectedEntry = plan.initialBalance
-      let realEntry = plan.initialBalance
+      let projectedEntry = 0
+      let realEntry = 0
 
       for (let p = 1; p <= periodCount; p++) {
         const pExpenses = plan.expenses.filter((e) => e.period === p)
@@ -103,8 +103,8 @@ export async function GET() {
         totalExpenses,
         totalReceived,
         totalPaid,
-        balance: plan.initialBalance + totalIncome - totalExpenses,
-        realBalance: plan.initialBalance + totalReceived - totalPaid,
+        balance: totalIncome - totalExpenses,
+        realBalance: totalReceived - totalPaid,
         initialBalance: plan.initialBalance,
         periods,
         categoryBreakdown,

@@ -139,7 +139,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
     // Row 2: Initial balance
     sheet.mergeCells(`A2:${LAST_COL_LETTER}2`)
     const balanceCell = sheet.getCell("A2")
-    balanceCell.value = `Saldo Inicial: ${formatCurrency(plan.initialBalance)}`
+    balanceCell.value = `Período: ${getMonthName(plan.month)} ${plan.year}`
     balanceCell.font = { size: 11 }
     balanceCell.alignment = { horizontal: "center" }
     sheet.getRow(2).height = 22
@@ -148,8 +148,8 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
     sheet.views = [{ state: "frozen", ySplit: 2, xSplit: 0 }]
 
     let currentRow = 4
-    let entryBalance = plan.initialBalance
-    let realEntryBalance = plan.initialBalance
+    let entryBalance = 0
+    let realEntryBalance = 0
 
     for (let p = 1; p <= periodCount; p++) {
       const periodExpenses = plan.expenses.filter((e) => e.period === p)

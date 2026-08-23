@@ -48,9 +48,9 @@ export async function POST(
     }
 
     // Saldo real encadeado até o período encontrado
-    let entry = plan.initialBalance
-    let realEntry = plan.initialBalance
-    let realBalance = plan.initialBalance
+    let entry = 0
+    let realEntry = 0
+    let realBalance = 0
     for (let p = 1; p <= period; p++) {
       const s = calcPeriodSummary(
         entry,

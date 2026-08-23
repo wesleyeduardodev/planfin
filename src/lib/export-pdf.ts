@@ -89,17 +89,11 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
     content.push({
       text: `${getMonthName(plan.month)} ${plan.year}`,
       style: "subheader",
-      margin: [0, 0, 0, 4],
-    } as Content)
-    content.push({
-      text: `Saldo Inicial: ${formatCurrency(plan.initialBalance)}`,
-      fontSize: 11,
-      color: "#475569",
       margin: [0, 0, 0, 16],
     } as Content)
 
-    let entryBalance = plan.initialBalance
-    let realEntryBalance = plan.initialBalance
+    let entryBalance = 0
+    let realEntryBalance = 0
 
     for (let p = 1; p <= periodCount; p++) {
       const periodExpenses = plan.expenses.filter((e) => e.period === p)
