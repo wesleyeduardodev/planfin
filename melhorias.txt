@@ -15,3 +15,6 @@ veja o que acha da minha ideia ou se tem alguma sugestao
 
 
 nas tebelas de despesas temos a coluna restante, na de entrada nao tem, temos que colocar ai tambem...
+
+
+mesmo nessa versao pwa, daria para habiliar a impressao digital do celualr ou pin?
