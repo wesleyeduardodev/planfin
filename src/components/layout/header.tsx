@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import Link from "next/link"
+import { PlanFinMark } from "@/components/auth/auth-shell"
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -34,6 +36,12 @@ export function Header({ onMenuClick }: HeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </Button>
+
+      {/* Marca (só mobile; no desktop está na sidebar) */}
+      <Link href="/" className="lg:hidden flex items-center gap-2 ml-1">
+        <PlanFinMark className="w-8 h-8" />
+        <span className="font-bold text-[17px] tracking-tight">PlanFin</span>
+      </Link>
 
       <div className="flex-1" />
 
