@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { defaultDueDate } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,12 +50,16 @@ export function AddExpenseDialog({
     description: "",
     plannedAmount: 0,
     averageAmount: 0,
-    dueDate: "",
+    dueDate: defaultDueDate(year, month),
     categoryId: "",
     isFixed: true,
     paymentMethod: "CASH" as "CASH" | "CARD",
     alreadyPaid: false,
   })
+
+  useEffect(() => {
+    if (open) setForm((f) => ({ ...f, dueDate: defaultDueDate(year, month) }))
+  }, [open, year, month])
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
@@ -85,7 +90,7 @@ export function AddExpenseDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", plannedAmount: 0, averageAmount: 0, dueDate: "", categoryId: "", isFixed: true, paymentMethod: "CASH", alreadyPaid: false })
+      setForm({ description: "", plannedAmount: 0, averageAmount: 0, dueDate: defaultDueDate(year, month), categoryId: "", isFixed: true, paymentMethod: "CASH", alreadyPaid: false })
       toast.success("Despesa adicionada")
     },
     onError: () => toast.error("Erro ao adicionar despesa"),

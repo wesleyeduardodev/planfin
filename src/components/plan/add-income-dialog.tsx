@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { defaultDueDate } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,10 +37,14 @@ export function AddIncomeDialog({
     description: "",
     expectedAmount: 0,
     averageAmount: 0,
-    dueDate: "",
+    dueDate: defaultDueDate(year, month),
     isFixed: true,
     alreadyReceived: false,
   })
+
+  useEffect(() => {
+    if (open) setForm((f) => ({ ...f, dueDate: defaultDueDate(year, month) }))
+  }, [open, year, month])
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -63,7 +68,7 @@ export function AddIncomeDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plan", year, month] })
       onOpenChange(false)
-      setForm({ description: "", expectedAmount: 0, averageAmount: 0, dueDate: "", isFixed: true, alreadyReceived: false })
+      setForm({ description: "", expectedAmount: 0, averageAmount: 0, dueDate: defaultDueDate(year, month), isFixed: true, alreadyReceived: false })
       toast.success("Receita adicionada")
     },
     onError: () => toast.error("Erro ao adicionar receita"),

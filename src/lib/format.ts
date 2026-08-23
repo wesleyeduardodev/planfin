@@ -49,6 +49,18 @@ export function nowBR(): { year: number; month: number; day: number } {
   return { year, month, day }
 }
 
+/**
+ * Data padrão (yyyy-MM-dd) para novos lançamentos de um plano:
+ * hoje (fuso de Fortaleza) se o plano for do mês atual; senão o mesmo dia
+ * dentro do mês do plano (limitado ao último dia).
+ */
+export function defaultDueDate(year: number, month: number): string {
+  const t = nowBR()
+  const lastDay = new Date(year, month, 0).getDate()
+  const day = t.year === year && t.month === month ? t.day : Math.min(t.day, lastDay)
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
 /** Cria Date em meio-dia UTC a partir de yyyy-MM-dd para evitar shift de timezone */
 export function toNoonUTC(dateStr: string): Date {
   // Se já contém horário (ex: "2026-03-06T12:00:00Z"), usa direto
