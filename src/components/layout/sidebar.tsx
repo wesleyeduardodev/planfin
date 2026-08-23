@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { DevelopedBy } from "@/components/shared/developed-by"
 
 function PlanFinLogo({ className }: { className?: string }) {
   return (
@@ -151,6 +152,9 @@ export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarP
             <LogOut className="h-[18px] w-[18px] shrink-0" />
             <span className={cn(collapsed && "lg:hidden")}>Sair</span>
           </button>
+          <div className={cn("pt-2 px-3 flex", collapsed && "lg:hidden")}>
+            <DevelopedBy tone="dark" />
+          </div>
         </div>
       </aside>
     </>

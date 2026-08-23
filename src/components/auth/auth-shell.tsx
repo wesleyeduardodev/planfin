@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { CheckCircle2, TrendingUp, Bell, CalendarRange } from "lucide-react"
+import { DevelopedBy } from "@/components/shared/developed-by"
 
 export function PlanFinMark({ className = "w-10 h-10" }: { className?: string }) {
   const id = useId()
@@ -124,7 +125,10 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/35">© {new Date().getFullYear()} PlanFin · Planejamento financeiro mensal</p>
+        <div className="relative flex items-center justify-between gap-4 text-xs text-white/35">
+          <span>© {new Date().getFullYear()} PlanFin</span>
+          <DevelopedBy tone="dark" />
+        </div>
       </aside>
 
       {/* Formulário */}
@@ -138,6 +142,9 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           {children}
 
           <p className="mt-7 text-center text-sm text-muted-foreground">{footer}</p>
+          <div className="mt-6 flex justify-center lg:hidden">
+            <DevelopedBy />
+          </div>
         </div>
       </main>
     </div>
