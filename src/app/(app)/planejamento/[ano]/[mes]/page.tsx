@@ -673,9 +673,6 @@ export default function PlanejamentoPage({
             <div className="space-y-8">
               {periodData.map((pd, i) => (
                 <div key={pd.period} className={cn("space-y-4", i > 0 && "pt-6 border-t-2 border-dashed")}>
-                  <h2 className="text-base font-bold uppercase tracking-wide text-muted-foreground">
-                    Período {pd.period}
-                  </h2>
                   <div className="flex items-center gap-2 flex-wrap">
                     {editingPeriod === pd.period ? (() => {
                       const { min, max } = getEditMinMax(pd.period)

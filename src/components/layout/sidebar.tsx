@@ -11,6 +11,8 @@ import {
   Settings,
   LogOut,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -52,9 +54,11 @@ const navItems = [
 interface SidebarProps {
   open: boolean
   onClose: () => void
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname()
 
   const isActive = (href: string) => pathname.startsWith(href)
@@ -71,15 +75,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:translate-x-0 lg:static lg:z-auto",
-          open ? "translate-x-0" : "-translate-x-full"
+          "fixed left-0 top-0 z-50 h-full w-64 bg-sidebar text-sidebar-foreground transition-[transform,width] duration-200 lg:translate-x-0 lg:static lg:z-auto",
+          open ? "translate-x-0" : "-translate-x-full",
+          collapsed && "lg:w-[68px]"
         )}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
-            <PlanFinLogo className="w-8 h-8" />
-            <span className="font-bold text-lg tracking-tight text-sidebar-foreground">
+        <div className={cn("flex h-16 items-center justify-between px-5", collapsed && "lg:px-0 lg:justify-center")}>
+          <Link href="/" className="flex items-center gap-2.5" onClick={onClose} title="PlanFin">
+            <PlanFinLogo className="w-8 h-8 shrink-0" />
+            <span className={cn("font-bold text-lg tracking-tight text-sidebar-foreground", collapsed && "lg:hidden")}>
               PlanFin
             </span>
           </Link>
@@ -103,28 +108,48 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 key={item.href}
                 href={item.href === "/planejamento" ? "/" : item.href}
                 onClick={onClose}
+                title={collapsed ? item.label : undefined}
+                aria-label={item.label}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                  collapsed && "lg:justify-center lg:px-0",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                     : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
-                {item.label}
+                <span className={cn(collapsed && "lg:hidden")}>{item.label}</span>
               </Link>
             )
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-sidebar-accent/30">
+        {/* Collapse toggle (desktop) + Logout */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-sidebar-accent/30 space-y-0.5">
+          <button
+            onClick={onToggleCollapse}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            className={cn(
+              "hidden lg:flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium w-full text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-150",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px] shrink-0" /> : <PanelLeftClose className="h-[18px] w-[18px] shrink-0" />}
+            {!collapsed && "Recolher"}
+          </button>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium w-full text-sidebar-foreground/60 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
+            title={collapsed ? "Sair" : undefined}
+            aria-label="Sair"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium w-full text-sidebar-foreground/60 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150",
+              collapsed && "lg:justify-center lg:px-0"
+            )}
           >
             <LogOut className="h-[18px] w-[18px] shrink-0" />
-            Sair
+            <span className={cn(collapsed && "lg:hidden")}>Sair</span>
           </button>
         </div>
       </aside>
