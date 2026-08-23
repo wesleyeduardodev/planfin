@@ -65,7 +65,7 @@ export function IncomeSection({
   const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ income: PlanIncome; direction: -1 | 1 } | null>(null)
 
-  type SortKey = "description" | "type" | "date" | "expected" | "average" | "received"
+  type SortKey = "description" | "type" | "date" | "expected" | "average" | "received" | "remaining"
   type SortDir = "asc" | "desc"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -101,6 +101,9 @@ export function IncomeSection({
           break
         case "received":
           cmp = a.receivedAmount - b.receivedAmount
+          break
+        case "remaining":
+          cmp = (a.expectedAmount - a.receivedAmount) - (b.expectedAmount - b.receivedAmount)
           break
       }
       return sortDir === "asc" ? cmp : -cmp
@@ -378,6 +381,7 @@ export function IncomeSection({
 
   const totalExpected = incomes.reduce((s, i) => s + i.expectedAmount, 0)
   const totalReceived = incomes.reduce((s, i) => s + i.receivedAmount, 0)
+  const totalRemaining = totalExpected - totalReceived
   const totalFixed = incomes.reduce((s, i) => s + (i.isFixed ? i.expectedAmount : 0), 0)
   const totalVariable = totalExpected - totalFixed
   const totalAverage = incomes.reduce((s, i) => s + (i.averageAmount ?? 0), 0)
@@ -403,6 +407,7 @@ export function IncomeSection({
     expected: "Esperado",
     average: "Médio",
     received: "Recebido",
+    remaining: "Restante",
   }
 
   const sortBar = (
@@ -472,6 +477,7 @@ export function IncomeSection({
             <>
               {sortedIncomes.map((inc) => {
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
+                const incRemaining = Math.max(0, inc.expectedAmount - inc.receivedAmount)
 
                 return (
                   <div
@@ -544,18 +550,24 @@ export function IncomeSection({
                     </div>
 
                     {/* Row 3: values */}
-                    <div className="grid grid-cols-3 gap-x-2 pt-2 border-t [&_.font-mono]:text-[13px] [&_.font-mono]:px-0">
-                      <div className="min-w-0 text-left">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2 border-t [&_.font-mono]:text-[13px] [&_.font-mono]:px-0">
+                      <div className="min-w-0">
                         <span className="text-muted-foreground text-xs block">Esperado</span>
                         {renderCurrencyEditor(inc, "expected")}
                       </div>
-                      <div className="min-w-0 text-center">
+                      <div className="min-w-0 text-right">
                         <span className="text-muted-foreground text-xs block">Médio</span>
                         {renderCurrencyEditor(inc, "average")}
                       </div>
-                      <div className="min-w-0 text-right">
+                      <div className="min-w-0">
                         <span className="text-muted-foreground text-xs block">Recebido</span>
                         {renderCurrencyEditor(inc, "received")}
+                      </div>
+                      <div className="min-w-0 text-right">
+                        <span className={cn("text-xs block", incRemaining > 0 ? "text-amber-600" : "text-emerald-600")}>Restante</span>
+                        <span className={cn("font-mono text-sm", incRemaining > 0 ? "text-amber-600" : "text-emerald-600")}>
+                          {formatCurrency(incRemaining)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -571,6 +583,13 @@ export function IncomeSection({
                     )}
                   </div>
                 </div>
+                {totalRemaining > 0 && (
+                  <div className="flex justify-end mt-1">
+                    <span className="font-mono text-xs text-amber-600">
+                      Restante: {formatCurrency(totalRemaining)}
+                    </span>
+                  </div>
+                )}
                 <div className="mt-2 pt-2 border-t">
                   {fixedVariableBreakdown}
                 </div>
@@ -599,19 +618,21 @@ export function IncomeSection({
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("expected")}>Esperado <SortIcon active={sortKey === "expected"} dir={sortDir} /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("average")}>Médio <SortIcon active={sortKey === "average"} dir={sortDir} /></button></TableHead>
               <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("received")}>Recebido <SortIcon active={sortKey === "received"} dir={sortDir} /></button></TableHead>
+              <TableHead className="text-right w-28"><button className="flex items-center gap-1 ml-auto hover:text-foreground cursor-pointer" onClick={() => toggleSort("remaining")}>Restante <SortIcon active={sortKey === "remaining"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {incomes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4 text-muted-foreground text-sm">
+                <TableCell colSpan={8} className="text-center py-4 text-muted-foreground text-sm">
                   Nenhuma receita
                 </TableCell>
               </TableRow>
             ) : (
               sortedIncomes.map((inc) => {
                 const isReceived = inc.receivedAmount >= inc.expectedAmount
+                const incRemaining = Math.max(0, inc.expectedAmount - inc.receivedAmount)
 
                 return (
                   <TableRow key={inc.id} className={cn(
@@ -654,6 +675,9 @@ export function IncomeSection({
                     </TableCell>
                     <TableCell className="text-right">
                       {renderCurrencyEditor(inc, "received")}
+                    </TableCell>
+                    <TableCell className={cn("text-right font-mono text-sm", incRemaining > 0 ? "text-amber-600" : "text-emerald-600")}>
+                      {formatCurrency(incRemaining)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
@@ -723,6 +747,9 @@ export function IncomeSection({
                 </TableCell>
                 <TableCell className="text-right font-mono text-base">
                   {formatCurrency(totalReceived)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-base">
+                  {formatCurrency(totalRemaining)}
                 </TableCell>
                 <TableCell />
               </TableRow>
