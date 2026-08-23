@@ -1,4 +1,1 @@
 Recuperar senha via email
-
-emitir um aviso caso queira cadastradar entrar ou despeza fora do mes corrente, na verdade uma 2 janela de confirmacao para ter certeza se quer isso mesm
-
