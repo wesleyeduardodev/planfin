@@ -38,9 +38,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1 p-4 lg:p-6">
             {children}
           </div>
-          <footer className="mt-6 border-t px-4 lg:px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3 text-[11px] text-muted-foreground/60">
+          <footer className="mt-6 bg-[#0b1220] px-4 lg:px-6 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3 text-[11px] text-white/35">
             <span>© {new Date().getFullYear()} PlanFin</span>
-            <DevelopedBy />
+            <DevelopedBy tone="dark" />
           </footer>
         </main>
       </div>
