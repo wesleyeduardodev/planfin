@@ -464,7 +464,7 @@ export default function PlanejamentoPage({
             { label: "A pagar", value: monthPending, cls: monthPending > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground" },
             { label: "Saldo projetado", value: finalBalance, cls: finalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", sub: `Real: ${formatCurrency(finalRealBalance)}`, title: "Saldo ao final do mês considerando tudo que está planejado (pago ou não). O Real considera só o que já foi pago/recebido." },
           ].map((k) => (
-            <div key={k.label} className="rounded-lg border bg-card px-3 py-2.5 last:col-span-2 sm:last:col-span-3 lg:last:col-span-1" title={"title" in k ? k.title : undefined}>
+            <div key={k.label} className="rounded-lg border bg-card px-3 py-2.5" title={"title" in k ? k.title : undefined}>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{k.label}</div>
               <div className={cn("font-mono text-base sm:text-lg font-bold leading-tight mt-0.5", k.cls)}>{formatCurrency(k.value)}</div>
               {"sub" in k && k.sub && (
