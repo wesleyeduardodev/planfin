@@ -24,6 +24,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { SwipeCard } from "@/components/shared/swipe-card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { PlanFilters, type PlanFilterValue, EMPTY_PLAN_FILTER, countActiveFilters, expenseMatchesFilter } from "@/components/shared/plan-filters"
 import { matchesRange } from "@/lib/date-filter"
 
@@ -81,13 +82,22 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
   const [editField, setEditField] = useState<"planned" | "paid" | "average" | "date" | "description">("planned")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [expandedPaid, setExpandedPaid] = useState<Set<string>>(new Set())
+  // Sheet de categoria só existe no mobile; no desktop o overlay dele bloqueava a tela
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
   const [toggleFixedTarget, setToggleFixedTarget] = useState<PlanExpense | null>(null)
   const [copyAveragesOpen, setCopyAveragesOpen] = useState(false)
   const [movePeriodTarget, setMovePeriodTarget] = useState<{ expense: PlanExpense; direction: -1 | 1 } | null>(null)
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
 
-  type SortKey = "description" | "type" | "payment" | "date" | "planned" | "average" | "paid" | "remaining"
+  type SortKey = "description" | "category" | "type" | "payment" | "date" | "planned" | "average" | "paid" | "remaining"
   type SortDir = "asc" | "desc"
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -108,6 +118,9 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
       switch (sortKey) {
         case "description":
           cmp = a.description.localeCompare(b.description, "pt-BR")
+          break
+        case "category":
+          cmp = (a.category?.name ?? "\uffff").localeCompare(b.category?.name ?? "\uffff", "pt-BR")
           break
         case "type":
           cmp = (a.isFixed ? 0 : 1) - (b.isFixed ? 0 : 1)
@@ -399,24 +412,34 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
   }
 
   // Desktop: dropdown popup
-  function renderCategoryDropdown(exp: PlanExpense) {
-    return (
-      <>
-        <button
-          className="w-3 h-3 rounded-full shrink-0 cursor-pointer ring-offset-background hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-shadow p-2 -m-2 bg-clip-content"
-          style={{ backgroundColor: exp.category?.color ?? "#d1d5db" }}
-          onClick={() => setCategoryEditId(categoryEditId === exp.id ? null : exp.id)}
-          aria-label="Mudar categoria"
-        />
-        {categoryEditId === exp.id && (
-          <div
-            ref={categoryRef}
-            className="absolute left-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px] hidden sm:block"
-          >
-            {renderCategoryList(exp)}
-          </div>
+  function renderCategoryChip(exp: PlanExpense, compact = false) {
+    const cat = exp.category
+    const chip = (
+      <button
+        type="button"
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border pl-1.5 pr-2 py-0.5 text-[11px] font-medium cursor-pointer hover:ring-2 hover:ring-ring/40 transition-shadow min-w-0",
+          compact && "max-w-[130px]",
+          !cat && "text-muted-foreground border-dashed"
         )}
-      </>
+        style={cat ? { borderColor: cat.color, color: cat.color, backgroundColor: `${cat.color}14` } : undefined}
+        onClick={isMobile ? () => setCategoryEditId(categoryEditId === exp.id ? null : exp.id) : undefined}
+        aria-label="Mudar categoria"
+        title={cat?.name ?? "Definir categoria"}
+      >
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat?.color ?? "#d1d5db" }} />
+        <span className="truncate">{cat?.name ?? "Sem categoria"}</span>
+      </button>
+    )
+    if (isMobile) return chip
+    // Desktop: Popover (portal) — não fica preso ao empilhamento/opacidade da linha
+    return (
+      <Popover open={categoryEditId === exp.id} onOpenChange={(o) => setCategoryEditId(o ? exp.id : null)}>
+        <PopoverTrigger asChild>{chip}</PopoverTrigger>
+        <PopoverContent align="start" className="w-[180px] p-1">
+          {renderCategoryList(exp)}
+        </PopoverContent>
+      </Popover>
     )
   }
 
@@ -512,6 +535,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
 
   const sortLabels: Record<SortKey, string> = {
     description: "Descrição",
+    category: "Categoria",
     type: "Tipo",
     payment: "Pgto.",
     date: "Data",
@@ -643,9 +667,8 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                       <span className="text-muted-foreground font-normal">Recolher</span>
                     </button>
                   )}
-                  {/* Row 1: category dot + description */}
+                  {/* Row 1: description */}
                   <div className="flex items-start gap-2 relative min-w-0">
-                    {renderCategoryDropdown(exp)}
                     {editingId === exp.id && editField === "description" ? (
                       <input
                         className="text-sm font-medium border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
@@ -677,6 +700,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                         <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
                       {renderPaymentBadge(exp)}
+                      {renderCategoryChip(exp, true)}
                       {exp.isAdjustment && (
                         <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-slate-600 border-slate-300 bg-slate-100 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800" title="Lançamento criado pelo alinhamento de saldo">Ajuste</Badge>
                       )}
@@ -781,6 +805,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
           <TableHeader>
             <TableRow>
               <TableHead><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("description")}>Descrição <SortIcon active={sortKey === "description"} dir={sortDir} /></button></TableHead>
+              <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("category")}>Categoria <SortIcon active={sortKey === "category"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-20"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("type")}>Tipo <SortIcon active={sortKey === "type"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-24"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("payment")}>Pgto. <SortIcon active={sortKey === "payment"} dir={sortDir} /></button></TableHead>
               <TableHead className="w-32"><button className="flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => toggleSort("date")}>Data <SortIcon active={sortKey === "date"} dir={sortDir} /></button></TableHead>
@@ -794,7 +819,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
           <TableBody>
             {expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-6 text-muted-foreground">
                   {filterActive && allExpenses.length > 0 ? "Nenhuma despesa neste intervalo" : "Nenhuma despesa"}
                   {hiddenNoDate > 0 && <div className="text-xs mt-1">{hiddenNoDate} sem data oculta(s)</div>}
                 </TableCell>
@@ -814,7 +839,6 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                   >
                     <TableCell className={cn(!isPaid && "border-l-3 border-l-red-400")}>
                       <div className="flex items-center gap-2 relative">
-                        {renderCategoryDropdown(exp)}
                         {editingId === exp.id && editField === "description" ? (
                           <input
                             className="text-sm border rounded px-1 py-0.5 bg-background flex-1 min-w-0"
@@ -837,6 +861,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{renderCategoryChip(exp)}</TableCell>
                     <TableCell>
                       {exp.isFixed ? (
                         <Badge
@@ -939,7 +964,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
             {/* Totals row */}
             {expenses.length > 0 && (
               <TableRow className="bg-red-50/80 dark:bg-red-950/20 font-bold border-t-2 border-red-200 dark:border-red-900">
-                <TableCell colSpan={4}>
+                <TableCell colSpan={5}>
                   <div className="space-y-1">
                     {fixedVariableBreakdown}
                     {paymentBreakdown}
@@ -965,7 +990,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
       </div>
 
       {/* Mobile: Sheet for category selection */}
-      <Sheet open={!!categoryEditId} onOpenChange={() => setCategoryEditId(null)}>
+      <Sheet open={!!categoryEditId && isMobile} onOpenChange={() => setCategoryEditId(null)}>
         <SheetContent side="bottom" className="sm:hidden">
           <SheetHeader>
             <SheetTitle>Selecionar Categoria</SheetTitle>
