@@ -412,18 +412,19 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
   }
 
   // Desktop: dropdown popup
-  function renderCategoryChip(exp: PlanExpense, compact = false) {
+  // variant "card": instância do card mobile (abre o Sheet); "table": célula da tabela desktop (Popover próprio, não-controlado)
+  function renderCategoryChip(exp: PlanExpense, variant: "table" | "card" = "table") {
     const cat = exp.category
-    const chip = (
+    const chip = (withOnClick: boolean) => (
       <button
         type="button"
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border pl-1.5 pr-2 py-0.5 text-[11px] font-medium cursor-pointer hover:ring-2 hover:ring-ring/40 transition-shadow min-w-0",
-          compact && "max-w-[130px]",
+          variant === "card" && "max-w-[130px]",
           !cat && "text-muted-foreground border-dashed"
         )}
         style={cat ? { borderColor: cat.color, color: cat.color, backgroundColor: `${cat.color}14` } : undefined}
-        onClick={isMobile ? () => setCategoryEditId(categoryEditId === exp.id ? null : exp.id) : undefined}
+        onClick={withOnClick ? () => setCategoryEditId(categoryEditId === exp.id ? null : exp.id) : undefined}
         aria-label="Mudar categoria"
         title={cat?.name ?? "Definir categoria"}
       >
@@ -431,11 +432,11 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
         <span className="truncate">{cat?.name ?? "Sem categoria"}</span>
       </button>
     )
-    if (isMobile) return chip
-    // Desktop: Popover (portal) — não fica preso ao empilhamento/opacidade da linha
+    if (variant === "card") return chip(true)
+    if (isMobile) return chip(true)
     return (
       <Popover open={categoryEditId === exp.id} onOpenChange={(o) => setCategoryEditId(o ? exp.id : null)}>
-        <PopoverTrigger asChild>{chip}</PopoverTrigger>
+        <PopoverTrigger asChild>{chip(false)}</PopoverTrigger>
         <PopoverContent align="start" className="w-[180px] p-1">
           {renderCategoryList(exp)}
         </PopoverContent>
@@ -700,7 +701,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
                         <Badge className="text-[10px] font-semibold shrink-0 cursor-pointer bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800" onClick={() => setToggleFixedTarget(exp)}>Variável</Badge>
                       )}
                       {renderPaymentBadge(exp)}
-                      {renderCategoryChip(exp, true)}
+                      {renderCategoryChip(exp, "card")}
                       {exp.isAdjustment && (
                         <Badge variant="outline" className="text-[10px] font-semibold shrink-0 text-slate-600 border-slate-300 bg-slate-100 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800" title="Lançamento criado pelo alinhamento de saldo">Ajuste</Badge>
                       )}
