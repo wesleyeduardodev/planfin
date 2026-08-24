@@ -51,7 +51,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Marca (só mobile; no desktop está na sidebar) */}
       <Link href="/" className="lg:hidden flex items-center gap-2 ml-1">
-        <PlanFinMark className="w-8 h-8" />
+        <PlanFinMark className="w-8 h-8" gradId="pf-grad-header" />
         <span className="font-bold text-[17px] tracking-tight">PlanFin</span>
       </Link>
 

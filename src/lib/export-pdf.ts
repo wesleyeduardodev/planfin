@@ -138,7 +138,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             inc.isFixed ? "Fixa" : "Variável",
             inc.dueDate ? formatShortDate(inc.dueDate) : "-",
             { text: formatCurrency(inc.expectedAmount), alignment: "right" },
-            { text: inc.averageAmount != null ? formatCurrency(inc.averageAmount) : "—", alignment: "right", color: COLORS.muted },
+            { text: formatCurrency(inc.averageAmount ?? 0), alignment: "right", color: COLORS.muted },
             { text: formatCurrency(inc.receivedAmount), alignment: "right", color: !isReceived ? COLORS.red : undefined },
           ])
         }
@@ -220,7 +220,7 @@ export async function generatePlanPDF(plans: ExportPlan[]): Promise<Buffer> {
             { text: exp.paymentMethod === "CARD" ? "Cartão" : "Dinheiro", color: exp.paymentMethod === "CARD" ? COLORS.violet : COLORS.emerald },
             exp.dueDate ? formatShortDate(exp.dueDate) : "-",
             { text: formatCurrency(exp.plannedAmount), alignment: "right" },
-            { text: exp.averageAmount != null ? formatCurrency(exp.averageAmount) : "—", alignment: "right", color: COLORS.muted },
+            { text: formatCurrency(exp.averageAmount ?? 0), alignment: "right", color: COLORS.muted },
             { text: formatCurrency(exp.paidAmount), alignment: "right", color: !isPaid ? COLORS.red : undefined },
           ])
         }

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useRef, useEffect } from "react"
+import { use, useState, useRef, useEffect, useMemo } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -41,8 +41,8 @@ import { PeriodSummary } from "@/components/plan/period-summary"
 import { MonthSummary } from "@/components/plan/month-summary"
 import { AddExpenseDialog } from "@/components/plan/add-expense-dialog"
 import { AlignBalanceDialog } from "@/components/plan/align-balance-dialog"
-import { DateRangeFilter } from "@/components/shared/date-range-filter"
-import { type DateRange, EMPTY_RANGE } from "@/lib/date-filter"
+import { PlanFilters, type PlanFilterValue, EMPTY_PLAN_FILTER, countActiveFilters, expenseMatchesFilter } from "@/components/shared/plan-filters"
+import { matchesRange, isRangeActive } from "@/lib/date-filter"
 import { AddIncomeDialog } from "@/components/plan/add-income-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { getMonthName, formatCurrency, nowBR } from "@/lib/format"
@@ -109,10 +109,18 @@ export default function PlanejamentoPage({
   const [addPeriodOpen, setAddPeriodOpen] = useState(false)
   const [alignOpen, setAlignOpen] = useState(false)
   const [fabOpen, setFabOpen] = useState(false)
-  const [globalRange, setGlobalRange] = useState<DateRange>(EMPTY_RANGE)
+  const [globalFilter, setGlobalFilter] = useState<PlanFilterValue>(EMPTY_PLAN_FILTER)
   const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
   const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [newPeriodDay, setNewPeriodDay] = useState(15)
+
+  const { data: filterCategories = [] } = useQuery<{ id: string; name: string; color: string }[]>({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories")
+      return res.ok ? res.json() : []
+    },
+  })
 
   const { data: userSettings } = useQuery<{ periodCount: number; showFab?: boolean }>({
     queryKey: ["settings"],
@@ -324,7 +332,7 @@ export default function PlanejamentoPage({
     setAddPeriodOpen(true)
   }
 
-  useEffect(() => { setGlobalRange(EMPTY_RANGE) }, [year, month])
+  useEffect(() => { setGlobalFilter(EMPTY_PLAN_FILTER) }, [year, month])
 
   function navigateMonth(delta: number) {
     let newMonth = month + delta
@@ -345,14 +353,26 @@ export default function PlanejamentoPage({
   const multiPeriod = periodCount > 1
   const showAddPeriod = multiPeriod || (userSettings?.periodCount ?? 1) > 1
 
+  // Filtro geral: recorta despesas (data+pagamento+categoria) e receitas (só data).
+  // Tudo abaixo — KPIs, períodos, resumos e saldo encadeado — usa as listas filtradas.
+  const globalActive = countActiveFilters(globalFilter) > 0
+  const fExpenses = useMemo(
+    () => (plan ? (globalActive ? plan.expenses.filter((e) => expenseMatchesFilter(e, globalFilter, matchesRange)) : plan.expenses) : []),
+    [plan, globalFilter, globalActive]
+  )
+  const fIncomes = useMemo(
+    () => (plan ? (isRangeActive(globalFilter.range) ? plan.incomes.filter((i) => matchesRange(i.dueDate, [globalFilter.range])) : plan.incomes) : []),
+    [plan, globalFilter]
+  )
+
   // Dados por período
   const periodData = Array.from({ length: periodCount }, (_, i) => {
     const p = i + 1
     return {
       period: p,
       label: plan ? getPeriodLabel(plan.cutDays, p, daysInMonth) : `Período ${p}`,
-      expenses: plan?.expenses.filter((e) => e.period === p) ?? [],
-      incomes: plan?.incomes.filter((inc) => inc.period === p) ?? [],
+      expenses: fExpenses.filter((e) => e.period === p),
+      incomes: fIncomes.filter((inc) => inc.period === p),
     }
   })
 
@@ -367,11 +387,11 @@ export default function PlanejamentoPage({
   })()
 
   // KPIs do mês
-  const monthIncome = plan?.incomes.reduce((a, i) => a + i.expectedAmount, 0) ?? 0
-  const monthExpenses = plan?.expenses.reduce((a, e) => a + e.plannedAmount, 0) ?? 0
-  const monthCard = plan?.expenses.reduce((a, e) => a + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0) ?? 0
-  const monthPending = plan?.expenses.reduce((a, e) => a + Math.max(0, e.plannedAmount - e.paidAmount), 0) ?? 0
-  const pendingCount = plan?.expenses.filter((e) => e.plannedAmount - e.paidAmount > 0).length ?? 0
+  const monthIncome = fIncomes.reduce((a, i) => a + i.expectedAmount, 0)
+  const monthExpenses = fExpenses.reduce((a, e) => a + e.plannedAmount, 0)
+  const monthCard = fExpenses.reduce((a, e) => a + (e.paymentMethod === "CARD" ? e.plannedAmount : 0), 0)
+  const monthPending = fExpenses.reduce((a, e) => a + Math.max(0, e.plannedAmount - e.paidAmount), 0)
+  const pendingCount = fExpenses.filter((e) => e.plannedAmount - e.paidAmount > 0).length
 
   // Saldos em cadeia (projetado + real)
   const summaries = periodData.reduce<ReturnType<typeof calcPeriodSummary>[]>(
@@ -398,7 +418,7 @@ export default function PlanejamentoPage({
             <h1 className="text-2xl font-bold tracking-tight leading-tight">{getMonthName(month)} {year}</h1>
             <p className="text-muted-foreground text-xs mt-0.5">
               {plan
-                ? `${multiPeriod ? `${periodCount} períodos · ` : ""}${plan.expenses.length} despesas · ${pendingCount} ${pendingCount === 1 ? "pendente" : "pendentes"}`
+                ? `${multiPeriod ? `${periodCount} períodos · ` : ""}${fExpenses.length} despesas · ${pendingCount} ${pendingCount === 1 ? "pendente" : "pendentes"}`
                 : "Planejamento financeiro mensal"}
             </p>
           </div>
@@ -409,7 +429,7 @@ export default function PlanejamentoPage({
 
         {plan && (
           <div className={cn("grid sm:flex sm:flex-wrap items-center gap-2 sm:justify-end [&>*]:min-w-0 [&_button]:w-full sm:[&_button]:w-auto", showAddPeriod ? "grid-cols-2" : "grid-cols-[1fr_1fr_auto]")}>
-            <DateRangeFilter value={globalRange} onChange={setGlobalRange} min={monthMin} max={monthMax} presets className="w-full sm:w-auto" />
+            <PlanFilters value={globalFilter} onChange={setGlobalFilter} categories={filterCategories} min={monthMin} max={monthMax} presets className="w-full sm:w-auto" />
             <Button
               variant="outline"
               size="sm"
@@ -449,6 +469,17 @@ export default function PlanejamentoPage({
           </div>
         )}
       </div>
+
+      {/* Aviso de filtro geral ativo */}
+      {plan && globalActive && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 flex items-center justify-between gap-3">
+          <span>
+            Mostrando apenas o recorte filtrado — todos os valores da tela (KPIs, períodos e resumos) estão recalculados.
+            {(globalFilter.payment || globalFilter.categoryId) && " Receitas não têm pagamento/categoria e seguem cheias (só o filtro de data as afeta)."}
+          </span>
+          <button type="button" className="shrink-0 font-semibold underline" onClick={() => setGlobalFilter(EMPTY_PLAN_FILTER)}>Limpar</button>
+        </div>
+      )}
 
       {/* KPIs do mês */}
       {plan && summaries.length > 0 && (
@@ -594,7 +625,6 @@ export default function PlanejamentoPage({
                 <IncomeSection
                   planId={plan.id}
                   incomes={pd.incomes}
-                  globalRange={globalRange}
                   period={pd.period}
                   periodCount={periodCount}
                   year={year}
@@ -607,7 +637,6 @@ export default function PlanejamentoPage({
                 <PeriodPanel
                   planId={plan.id}
                   expenses={pd.expenses}
-                  globalRange={globalRange}
                   period={pd.period}
                   periodCount={periodCount}
                   year={year}
@@ -625,7 +654,7 @@ export default function PlanejamentoPage({
                 />
               </div>
             ))}
-            <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
+            <MonthSummary expenses={fExpenses} incomes={fIncomes} />
           </div>
 
           {/* Mobile: períodos em sequência */}
@@ -698,8 +727,7 @@ export default function PlanejamentoPage({
                   <IncomeSection
                     planId={plan.id}
                     incomes={pd.incomes}
-                    globalRange={globalRange}
-                    period={pd.period}
+                      period={pd.period}
                     periodCount={periodCount}
                     year={year}
                     month={month}
@@ -711,8 +739,7 @@ export default function PlanejamentoPage({
                   <PeriodPanel
                     planId={plan.id}
                     expenses={pd.expenses}
-                    globalRange={globalRange}
-                    period={pd.period}
+                      period={pd.period}
                     periodCount={periodCount}
                     year={year}
                     month={month}
@@ -731,7 +758,7 @@ export default function PlanejamentoPage({
               ))}
             </div>
             <div className="mt-8">
-              <MonthSummary expenses={plan.expenses} incomes={plan.incomes} />
+              <MonthSummary expenses={fExpenses} incomes={fIncomes} />
             </div>
           </div>
 

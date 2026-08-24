@@ -1,12 +1,9 @@
 "use client"
 
-import { useId } from "react"
 import { CheckCircle2, TrendingUp, Bell, CalendarRange } from "lucide-react"
 import { DevelopedBy } from "@/components/shared/developed-by"
 
-export function PlanFinMark({ className = "w-10 h-10" }: { className?: string }) {
-  const id = useId()
-  const gradId = `pf-grad-${id}`
+export function PlanFinMark({ className = "w-10 h-10", gradId = "pf-grad" }: { className?: string; gradId?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
@@ -82,7 +79,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       <header className="relative lg:hidden overflow-hidden bg-[#0b1220] text-white px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-16">
         <Glow />
         <div className="relative flex items-center gap-2.5">
-          <PlanFinMark className="w-9 h-9" />
+          <PlanFinMark className="w-9 h-9" gradId="pf-grad-hero" />
           <span className="text-lg font-bold tracking-tight">PlanFin</span>
         </div>
         <h2 className="relative mt-6 text-[26px] font-bold leading-tight tracking-tight">
@@ -96,7 +93,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         <Glow />
 
         <div className="relative flex items-center gap-3">
-          <PlanFinMark className="w-10 h-10" />
+          <PlanFinMark className="w-10 h-10" gradId="pf-grad-aside" />
           <span className="text-xl font-bold tracking-tight">PlanFin</span>
         </div>
 

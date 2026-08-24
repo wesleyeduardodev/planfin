@@ -183,7 +183,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
           inc.isFixed ? "Fixa" : "Variável",
           inc.dueDate ? formatShortDate(inc.dueDate) : "-",
           inc.expectedAmount,
-          inc.averageAmount ?? null,
+          inc.averageAmount ?? 0,
           inc.receivedAmount,
         ])
         addFilterableTable(
@@ -245,7 +245,7 @@ export async function generatePlanExcel(plans: ExportPlan[]): Promise<Buffer> {
           exp.paymentMethod === "CARD" ? "Cartão" : "Dinheiro",
           exp.dueDate ? formatShortDate(exp.dueDate) : "-",
           exp.plannedAmount,
-          exp.averageAmount ?? null,
+          exp.averageAmount ?? 0,
           exp.paidAmount,
           exp.plannedAmount - exp.paidAmount,
         ])

@@ -48,7 +48,6 @@ interface IncomeSectionProps {
   year: number
   month: number
   onAddIncome: () => void
-  globalRange?: DateRange
 }
 
 export function IncomeSection({
@@ -59,14 +58,13 @@ export function IncomeSection({
   year,
   month,
   onAddIncome,
-  globalRange,
 }: IncomeSectionProps) {
   const queryClient = useQueryClient()
   const [localRange, setLocalRange] = useState<DateRange>(EMPTY_RANGE)
-  const filterActive = isRangeActive(globalRange) || isRangeActive(localRange)
+  const filterActive = isRangeActive(localRange)
   const incomes = useMemo(
-    () => (filterActive ? allIncomes.filter((i) => matchesRange(i.dueDate, [globalRange, localRange])) : allIncomes),
-    [allIncomes, globalRange, localRange, filterActive]
+    () => (filterActive ? allIncomes.filter((i) => matchesRange(i.dueDate, [localRange])) : allIncomes),
+    [allIncomes, localRange, filterActive]
   )
   const hiddenNoDate = filterActive ? allIncomes.filter((i) => !i.dueDate).length : 0
   const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
@@ -330,7 +328,7 @@ export function IncomeSection({
           )}
           onClick={() => startEdit(inc, field)}
         >
-          {value != null ? formatCurrency(value) : "—"}
+          {formatCurrency(value ?? 0)}
         </button>
       </span>
     )

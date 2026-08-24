@@ -24,8 +24,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { SwipeCard } from "@/components/shared/swipe-card"
-import { DateRangeFilter } from "@/components/shared/date-range-filter"
-import { type DateRange, EMPTY_RANGE, isRangeActive, matchesRange } from "@/lib/date-filter"
+import { PlanFilters, type PlanFilterValue, EMPTY_PLAN_FILTER, countActiveFilters, expenseMatchesFilter } from "@/components/shared/plan-filters"
+import { matchesRange } from "@/lib/date-filter"
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   if (!active) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
@@ -57,8 +57,6 @@ interface PeriodPanelProps {
   year: number
   month: number
   onAddExpense: () => void
-  /** Filtro geral de data vindo da página (combinado com o filtro local) */
-  globalRange?: DateRange
 }
 
 interface Category {
@@ -67,15 +65,15 @@ interface Category {
   color: string
 }
 
-export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount, year, month, onAddExpense, globalRange }: PeriodPanelProps) {
+export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount, year, month, onAddExpense }: PeriodPanelProps) {
   const queryClient = useQueryClient()
-  const [localRange, setLocalRange] = useState<DateRange>(EMPTY_RANGE)
-  const filterActive = isRangeActive(globalRange) || isRangeActive(localRange)
+  const [localFilter, setLocalFilter] = useState<PlanFilterValue>(EMPTY_PLAN_FILTER)
+  const filterActive = countActiveFilters(localFilter) > 0
   const expenses = useMemo(
-    () => (filterActive ? allExpenses.filter((e) => matchesRange(e.dueDate, [globalRange, localRange])) : allExpenses),
-    [allExpenses, globalRange, localRange, filterActive]
+    () => (filterActive ? allExpenses.filter((e) => expenseMatchesFilter(e, localFilter, matchesRange)) : allExpenses),
+    [allExpenses, localFilter, filterActive]
   )
-  const hiddenNoDate = filterActive ? allExpenses.filter((e) => !e.dueDate).length : 0
+  const hiddenNoDate = filterActive && (localFilter.range.from || localFilter.range.to) ? allExpenses.filter((e) => !e.dueDate).length : 0
   const monthMin = `${year}-${String(month).padStart(2, "0")}-01`
   const monthMax = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -473,7 +471,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
           )}
           onClick={() => startEdit(exp, field)}
         >
-          {value != null ? formatCurrency(value) : "—"}
+          {formatCurrency(value ?? 0)}
         </button>
       </span>
     )
@@ -558,7 +556,7 @@ export function PeriodPanel({ planId, expenses: allExpenses, period, periodCount
       </h4>
       <div className="flex items-center gap-1">
         {allExpenses.length > 0 && (
-          <DateRangeFilter value={localRange} onChange={setLocalRange} min={monthMin} max={monthMax} label="Data" size="xs" className="mr-1" />
+          <PlanFilters value={localFilter} onChange={setLocalFilter} categories={categories} min={monthMin} max={monthMax} label="Filtros" size="xs" className="mr-1 max-w-[190px]" />
         )}
         {allExpenses.length > 0 && (
           <Button
